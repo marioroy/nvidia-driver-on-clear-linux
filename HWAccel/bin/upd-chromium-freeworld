@@ -1,0 +1,136 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+# Install and update script for Chromium-Freeworld.
+# https://pkgs.org/search/?q=chromium-freeworld
+#-------------------------------------------------------------------------------
+
+# shellcheck disable=SC2001,SC2143,SC2164
+
+URL='https://download1.rpmfusion.org/free/fedora/updates/testing/37/x86_64/c/'
+FILE=$(curl -s "$URL" | awk -F'"' '/chromium-freeworld/ { print $8; exit }')
+
+if [[ -z "$FILE" ]]; then
+   URL='https://download1.rpmfusion.org/free/fedora/updates/37/x86_64/c/'
+   FILE=$(curl -s "$URL" | awk -F'"' '/chromium-freeworld/ { print $8; exit }')
+fi
+if [[ -z "$FILE" ]]; then
+   URL='https://download1.rpmfusion.org/free/fedora/releases/37/Everything/x86_64/os/Packages/c/'
+   FILE=$(curl -s "$URL" | awk -F'"' '/chromium-freeworld/ { print $8; exit }')
+fi
+if [[ -z "$FILE" ]]; then
+   echo "ERROR: chromium-freeworld-*.rpm (No such file at download URL)"
+   echo "$URL"
+   exit 1
+fi
+
+NEW_VER=$(echo "$FILE" | cut -d- -f3)
+BROWSER_EXE="/opt/chromium-freeworld/chromium-freeworld.sh"
+
+if [[ -x "$BROWSER_EXE" ]]; then
+   CUR_VER=$($BROWSER_EXE --version 2>/dev/null | awk '{ print $NF }')
+else
+   CUR_VER="not-installed"
+fi
+
+if [[ "$NEW_VER" == "$CUR_VER" ]]; then
+   echo "Chromium-Freeworld $CUR_VER (current)"
+   exit
+elif [[ "$USER" == "root" ]]; then
+   echo "Please run the script as a normal user, exiting..."
+   exit 1
+fi
+
+# Test sudo, exit if wrong password or terminated.
+sudo true >/dev/null || exit 2
+
+#-------------------------------------------------------------------------------
+# Install dependencies.
+
+if [[ ! -x "/usr/bin/curl" || ! -x "/usr/bin/rpm2cpio" ]]; then
+   echo "Installing dependencies."
+   sudo swupd bundle-add curl package-utils --quiet
+fi
+
+# Install libffi-3.4.x (libffi.so.8); required for recent Chromium-Freeworld.
+# Skipped on Fedora 37;  has libffi-3.4.x (libffi.so.8).
+# Clear Linux 37780 provides libffi-3.3.x (libffi.so.7).
+
+if [[ ! -f /usr/lib64/libffi.so.8 ]]; then
+   if [[ ! -f /usr/local/lib64/libffi.so.8 ]]; then
+      mkdir -p /tmp/update.$$ && pushd /tmp/update.$$ >/dev/null
+
+      URL2="https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/37/Everything/x86_64/os/Packages/l/"
+      FILE2=$(curl -s "$URL2" | awk -F'"' '/libffi-.*\.x86_64.rpm/ { print $6; exit }')
+
+      if [[ -z "$FILE2" ]]; then
+         echo "ERROR: libffi-*.rpm (No such file at download URL)"
+         echo "$URL2"
+         exit 1
+      fi
+
+      VER2=$(echo "$FILE2" | cut -d- -f2)
+      echo "Installing libffi-${VER2} (libffi.so.8) to /usr/local/lib64/."
+      curl -LO "${URL2}${FILE2}"
+
+      if [[ ! -f "$FILE2" || -n $(grep "404 Not Found" "$FILE2") ]]; then
+         rm -f "$FILE2"
+         echo "ERROR: $FILE2 (No such file at download URL)"
+         echo "$URL2"
+         exit 1
+      fi
+      
+      rpm2cpio "$FILE2" | cpio -idm 2>/dev/null
+      sudo mkdir -p /usr/local/lib64
+      sudo cp -a usr/lib64/libffi.so.8* /usr/local/lib64/.
+      sudo ldconfig
+
+      popd >/dev/null
+      rm -fr /tmp/update.$$
+   fi
+fi
+
+#-------------------------------------------------------------------------------
+# Install or update Chromium-Freeworld.
+
+if [[ ! -x "$BROWSER_EXE" ]]; then
+   echo "Installing Chromium-Freeworld $NEW_VER"
+else
+   echo "Updating Chromium-Freeworld $NEW_VER"
+   # remove older installation via rpm
+   sudo rpm -e chromium-freeworld 2>/dev/null
+fi
+
+cd ~/Downloads
+
+if [[ ! -f "$FILE" ]]; then
+   curl -LO "${URL}${FILE}"
+   if [[ ! -f "$FILE" || -n $(grep "404 Not Found" "$FILE") ]]; then
+      rm -f "$FILE"
+      echo "ERROR: $FILE (No such file at download URL)"
+      echo "$URL"
+      exit 1
+   fi
+fi
+
+mkdir -p /tmp/update.$$ && pushd /tmp/update.$$ >/dev/null
+rpm2cpio ~/Downloads/"$FILE" | cpio -idm 2>/dev/null
+
+sudo mkdir -p /opt
+sudo rm -rf /opt/chromium-freeworld
+sudo cp -a usr/share/* /usr/share/.
+sudo mv usr/lib64/chromium-freeworld /opt/.
+sudo mv usr/bin/chromium-freeworld /opt/chromium-freeworld/chromium-freeworld.sh
+sudo sed -i 's!/usr/lib64!/opt!' /opt/chromium-freeworld/chromium-freeworld.sh
+
+sudo sed -i 's!^\(Exec=\)\(chromium-freeworld\)!\1/opt/\2/\2.sh!g' \
+   /usr/share/applications/chromium-freeworld.desktop
+
+[ -d /opt/google/chrome/WidevineCdm ] && \
+   sudo ln -sf /opt/google/chrome/WidevineCdm /opt/chromium-freeworld/.
+
+popd >/dev/null
+rm -fr /tmp/update.$$
+
+sync
+echo "OK"
+

@@ -1,0 +1,60 @@
+#!/bin/bash
+# Launch script for Google Chrome stable.
+
+EXECCMD=/opt/google/chrome/google-chrome
+
+if [[ ! -x "$EXECCMD" ]]; then
+    echo "ERROR: cannot access '$EXECCMD': No such executable"
+    exit 1
+fi
+
+if [[ "$1" == "--version" ]]; then
+    exec "$EXECCMD" --version
+fi
+
+# shellcheck source=/dev/null
+if [[ $(source "/etc/os-release"; echo "$ID") == "clear-linux-os" ]]; then
+    export FONTCONFIG_PATH=/usr/share/defaults/fonts
+    # Fix for MESA_GLSL_CACHE_DISABLE is deprecated.
+    if [[ -n "$MESA_GLSL_CACHE_DISABLE" ]]; then
+        export MESA_SHADER_CACHE_DISABLE="$MESA_GLSL_CACHE_DISABLE"
+        unset MESA_GLSL_CACHE_DISABLE
+    fi
+fi
+
+# Optionally, uncomment one of the following matching your configuration.
+# Try 'vainfo' first using the command-line. If needed, install the
+# enhanced-h264ify extension to block {VP8, VP9, AV1}.
+# export LIBVA_DRIVER_NAME=iHD
+# export LIBVA_DRIVER_NAME=i965   # Try i965 if iHD has glitches
+# export LIBVA_DRIVER_NAME=r600
+# export LIBVA_DRIVER_NAME=radeonsi
+# export LIBVA_DRIVER_NAME=nvidia
+
+# Uncomment the following two lines if mostly using integrated graphics
+# and prefer offloading some applications to the NVIDIA GPU.
+# export __NV_PRIME_RENDER_OFFLOAD=1
+# export __GLX_VENDOR_LIBRARY_NAME=nvidia
+
+if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
+    # Opt-in: Uncomment the if block for improved 1080p+ video playback.
+  # if [[ -d /proc/driver/nvidia ]]; then
+  #     OZ="--ozone-platform=x11 --force-device-scale-factor=1.0"
+  #     export GDK_BACKEND=x11
+  # else
+        OZ="--ozone-platform=wayland"
+  # fi
+else
+    OZ="--ozone-platform=x11"
+fi
+
+# Opt-in: change to --enable-font-subpixel-positioning on HiDPI display
+
+exec "$EXECCMD" --window-size=1213,1004 $OZ \
+    --disable-features=UseChromeOSDirectVideoDecoder --disable-gpu-vsync \
+    --disable-font-subpixel-positioning --disable-direct-composition \
+    --enable-features=VaapiVideoDecoder --enable-smooth-scrolling \
+    --enable-accelerated-2d-canvas --enable-gpu-rasterization \
+    --enable-features=Vulkan --use-vulkan --process-per-site \
+    "$@" &>/dev/null &
+

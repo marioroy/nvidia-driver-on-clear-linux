@@ -1,0 +1,19 @@
+#!/bin/bash
+
+mkdir -p "SOURCES"
+
+( rpmbuild --quiet -bb \
+    SPECS/vdpau-va-driver-vp9.spec --define "_topdir $PWD" \
+    --define "_sourcedir $PWD/SOURCES" --undefine=_disable_source_fetch \
+    --define "abi_package %{nil}" || { echo "Build failed"; kill $$; }
+) 2>&1 | grep -Ev '^((chmod|find):.* No such file or directory|warning: Empty %files)'
+
+rm -f RPMS/x86_64/*debuginfo*.rpm
+rm -f RPMS/x86_64/*debugsource*.rpm
+
+# shellcheck disable=SC2012
+rpmfile=$(ls -1t RPMS/x86_64/vdpau-va-driver-vp9-*.rpm | head -1)
+
+sudo rpm -e "libva-vdpau-driver" 2>/dev/null # uninstall fedora dist rpm
+sudo rpm -Uvh --nodeps --force "$rpmfile"
+

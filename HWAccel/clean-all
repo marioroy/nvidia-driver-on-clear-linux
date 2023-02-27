@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# shellcheck disable=SC2164
+# shellcheck source=/dev/null
+
+OS=$(source "/etc/os-release" 2>/dev/null; echo "$ID"); [[ -z "$OS" ]] && exit 1
+
+if [[ ! -d "requires" || ! -d "rpmbuild" ]]; then
+    echo "Run script from the HWAccel dir."
+    echo "bash clean-all"
+    exit 1
+fi
+
+# Test sudo, exit if wrong password or terminated.
+sudo true >/dev/null || exit 2
+
+if [[ "$OS" == "clear-linux-os" ]]; then
+    pushd requires >/dev/null
+    ./"uninstall-packages" && echo "" || exit $?
+    echo "Cleaning requires: rm -rf pkg.list PKGS"
+    rm -rf pkg.list PKGS
+    popd >/dev/null
+fi
+
+pushd rpmbuild >/dev/null
+echo "Cleaning rpmbuild: rm -rf BUILD BUILDROOT SOURCES SRPMS"
+rm -rf BUILD BUILDROOT SOURCES SRPMS
+popd >/dev/null
+
+echo ""
+

@@ -1,0 +1,70 @@
+#!/bin/bash
+# Launch script for Mozilla Firefox.
+
+EXECCMD=/usr/bin/firefox
+
+if [[ ! -x "$EXECCMD" ]]; then
+    echo "ERROR: cannot access '$EXECCMD': No such executable"
+    exit 1
+fi
+
+if [[ "$1" == "--version" ]]; then
+    exec "$EXECCMD" --version
+fi
+
+# shellcheck source=/dev/null
+if [[ $(source "/etc/os-release"; echo "$ID") == "clear-linux-os" ]]; then
+    export FONTCONFIG_PATH=/usr/share/defaults/fonts
+
+    # Add path to FFmpeg libs, if available.
+    if [[ -d /opt/3rd-party/bundles/clearfraction/usr/local-cuda/lib64 ]]; then
+        export LD_LIBRARY_PATH=/usr/lib64:/opt/3rd-party/bundles/clearfraction/usr/local-cuda/lib64:/opt/3rd-party/bundles/clearfraction/usr/lib64
+    elif [[ -d /opt/3rd-party/bundles/clearfraction/usr/lib64 ]]; then
+        export LD_LIBRARY_PATH=/usr/lib64:/opt/3rd-party/bundles/clearfraction/usr/lib64
+    fi
+
+    # Fix for MESA_GLSL_CACHE_DISABLE is deprecated.
+    if [[ -n "$MESA_GLSL_CACHE_DISABLE" ]]; then
+        export MESA_SHADER_CACHE_DISABLE="$MESA_GLSL_CACHE_DISABLE"
+        unset MESA_GLSL_CACHE_DISABLE
+    fi
+fi
+
+# Using NVIDIA graphics?
+if [[ -d /proc/driver/nvidia && -f /usr/lib64/dri/nvidia_drv_video.so ]]; then
+    export MOZ_DISABLE_RDD_SANDBOX=1
+
+    # The EGL backend (which is still the default) was broken in the 525 driver
+    # series, so the direct backend is necessary for decoding to work.
+
+    version=$(head -1 /proc/driver/nvidia/version | awk '{ print $8 }')
+    [[ ${version%%.*} -ge 525 ]] && export NVD_BACKEND=direct
+fi
+
+# Optionally, uncomment one of the following matching your configuration.
+# Try 'vainfo' first using the command-line. If needed, install the
+# enhanced-h264ify extension to block {VP8, VP9, AV1}.
+# export LIBVA_DRIVER_NAME=iHD
+# export LIBVA_DRIVER_NAME=i965   # Try i965 if iHD has glitches
+# export LIBVA_DRIVER_NAME=r600
+# export LIBVA_DRIVER_NAME=radeonsi
+# export LIBVA_DRIVER_NAME=nvidia
+
+# Uncomment the following two lines if mostly using integrated graphics
+# and prefer offloading some applications to the NVIDIA GPU.
+# export __NV_PRIME_RENDER_OFFLOAD=1
+# export __GLX_VENDOR_LIBRARY_NAME=nvidia
+
+if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
+  # export EGL_PLATFORM=wayland   # Firefox segfaults on Fedora 37
+    export MOZ_ENABLE_WAYLAND=1
+else
+    export MOZ_DISABLE_WAYLAND=1
+fi
+
+export MOZ_USE_XINPUT2=1
+export MOZ_X11_EGL=1
+export MOZ_WEBRENDER=1
+
+exec "$EXECCMD" "$@" &>/dev/null &
+

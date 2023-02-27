@@ -1,0 +1,97 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+# Install and update script for Microsoft Edge stable.
+# https://packages.microsoft.com/yumrepos/edge/
+#-------------------------------------------------------------------------------
+
+# shellcheck disable=SC2001,SC2143,SC2164
+
+suffix=$(
+   curl -s "https://packages.microsoft.com/yumrepos/edge/" |\
+   grep "stable-" | cut -d'"' -f2 | cut -d- -f4- | sort -n |\
+   tail -1
+)
+
+URL="https://packages.microsoft.com/yumrepos/edge/microsoft-edge-stable-${suffix}"
+FILE="${URL##*/}"
+
+if [[ -z "$FILE" ]]; then
+   echo "ERROR: microsoft-edge-stable-*.rpm (No such file at download URL)"
+   echo "https://packages.microsoft.com/yumrepos/edge/"
+   exit 1
+fi
+
+NEW_VER=$(echo "$FILE" | cut -d- -f4)
+BROWSER_EXE="/opt/microsoft/msedge/microsoft-edge"
+
+if [[ -x "$BROWSER_EXE" ]]; then
+   CUR_VER=$($BROWSER_EXE --version 2>/dev/null | awk '{ print $3 }')
+else
+   CUR_VER="not-installed"
+fi
+
+if [[ "$NEW_VER" == "$CUR_VER" ]]; then
+   echo "Microsoft Edge stable $CUR_VER (current)"
+   exit 0
+elif [[ "$USER" == "root" ]]; then
+   echo "Please run the script as a normal user, exiting..."
+   exit 1
+fi
+
+# Test sudo, exit if wrong password or terminated.
+sudo true >/dev/null || exit 2
+
+# Install dependencies.
+if [[ ! -x "/usr/bin/curl" || ! -x "/usr/bin/rpm2cpio" ]]; then
+   echo "Installing dependencies."
+   sudo swupd bundle-add curl package-utils --quiet
+fi
+
+#-------------------------------------------------------------------------------
+
+if [[ ! -x "$BROWSER_EXE" ]]; then
+   echo "Installing Microsoft Edge stable $NEW_VER"
+else
+   echo "Updating Microsoft Edge stable $NEW_VER"
+   # remove older installation via rpm
+   sudo rpm -e microsoft-edge-stable 2>/dev/null
+fi
+
+cd ~/Downloads
+
+if [[ ! -f "$FILE" ]]; then
+   curl -LO "$URL"
+   if [[ ! -f "$FILE" || -n $(grep "404 Not Found" "$FILE") ]]; then
+      rm -f "$FILE"
+      echo "ERROR: $FILE (No such file at download URL)"
+      echo "https://packages.microsoft.com/yumrepos/edge/"
+      exit 1
+   fi
+fi
+
+mkdir -p /tmp/update.$$ && pushd /tmp/update.$$ >/dev/null
+rpm2cpio ~/Downloads/"$FILE" | cpio -idm 2>/dev/null
+
+sudo mkdir -p /opt/microsoft
+sudo rm -rf /opt/microsoft/msedge
+sudo cp -a usr/share/* /usr/share/.
+sudo mv opt/microsoft/msedge /opt/microsoft/.
+
+sudo sed -i 's!/usr/bin/microsoft-edge-stable!/opt/microsoft/msedge/microsoft-edge!g' \
+   /usr/share/applications/microsoft-edge.desktop
+
+popd >/dev/null
+rm -fr /tmp/update.$$
+
+# Add icons to the system icons; installs to /usr/share/icons/hicolor/.
+for icon in \
+   product_logo_256.png product_logo_48.png product_logo_128.png product_logo_16.png \
+   product_logo_64.png product_logo_24.png product_logo_32.png
+do
+   size=$(echo "$icon" | sed 's/[^0-9]//g')
+   sudo xdg-icon-resource install --size "$size" /opt/microsoft/msedge/${icon} "microsoft-edge"
+done
+
+sync
+echo "OK"
+

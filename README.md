@@ -6,6 +6,8 @@ An automation **how-to** for installing the NVIDIA proprietary driver on Clear L
 
 *Starting fresh? Obtain a recent Clear Linux image, 38300 or later, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running < 38270 and updating the OS >= 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.*
 
+*Using a NVIDIA Optimus laptop? Select the lts kernel in 'Advanced options' and later install the 520 driver. See also, [tip by leiniercs](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499/3).*
+
 Depending on the CL release, the open-source nouveau driver may not work with recent NVIDIA graphics (3000 series or later). The solution is to install the OS in text mode. Press the letter `e` on the boot screen and prepend `nomodeset 3` with a space to the list of kernel arguments. The OS will boot into multi-user mode and prevent the nouveau driver from loading. Press enter to boot the OS. Instructions are provided on the screen for running the installer.
 
 During setup, remember to enter `[A]` Advanced options. Select "Kernel Command Line" and enter `nomodeset 3` to "Add Extra Arguments". Optionally, go back to the prior screen and choose the `lts` (recommended) or `native` kernel under "Kernel Selection". Also disable automatic OS updates if desired.
@@ -170,6 +172,7 @@ sudo swupd bundle-add desktop-kde-apps   # optional
 
 ## See also
 
+* [Announcement; tips and solutions](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499)
 * [CUDA Redistributable Driver Archive](https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/)
 * [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 * [NVIDIA Driver Archive](https://download.nvidia.com/XFree86/Linux-x86_64/)

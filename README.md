@@ -32,8 +32,6 @@ cd nvidia-driver-on-clear-linux
 
 First, run the pre-installer script and reboot the OS. The `update` argument is needed on prior Clear Linux installations to refresh the associated configuration files under `/etc/`. Run the pre-installer script subsequently, without an argument, to switch the boot target to text mode.
 
-*Note:  The pre-installer script installs the lts2021 kernel for better success during the NVIDIA installation.*
-
 ```bash
 $ bash ./pre-install-driver help
 Usage: pre-install-driver [ update ]
@@ -43,8 +41,6 @@ $ bash ./pre-install-driver update
 $ bash ./pre-install-driver
 $ reboot
 ```
-
-Boot into the lts2021 kernel.
 
 Next, run the driver installer script. Running the LTS kernel? Choose any driver in the list. Planning on running the native kernel or GeForce RTX 4000 series? Specify `525` minimally or latest. Or provide the location of the `NVIDIA-Linux-x86_64-*` run-file. Do not forget to run the `check-kernel-dkms` script. That will check each kernel and involve `dkms` to auto-install the NVIDIA modules, if needed.
 
@@ -64,8 +60,6 @@ $ bash ./install-driver 525
 $ bash ./check-kernel-dkms
 $ reboot
 ```
-
-Boot into any kernel.
 
 ## NVIDIA CUDA Toolkit installation
 
@@ -138,7 +132,7 @@ $ reboot
 
 ## Troubleshooting
 
-Running 6.x kernel? There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation. *Solution: The pre-installer script installs the lts2021 kernel. Boot into it before installing the NVIDIA driver.*
+Running 6.x kernel? There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
 
 Installing a kernel manually or have multiple kernels (LTS and native)? Run `check-kernel-dkms` manually. The script installs missing dkms bundles and runs `dkms autoinstall` per each kernel on the system.
 

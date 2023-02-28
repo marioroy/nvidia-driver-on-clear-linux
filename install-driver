@@ -154,6 +154,17 @@ else
     [[ -L /usr/lib64/libOpenGL.so    ]] && sudo rm -f /usr/lib{32,64}/libOpenGL.so
 fi
 
+# Remove the vulkan producer libs, to be copied after installation.
+sudo rm -f /usr/lib64/libnvidia-vulkan-producer.so.*
+
+# Create a dkms wrapper to include the --force flag.
+# This workaround resolves the dkms false-positives running on Linux kernel 6.x.
+sudo rm -f "/tmp/dkms"
+( echo '#!/bin/bash'
+  echo 'exec /usr/bin/dkms --force "$@"'
+) > "/tmp/dkms"
+chmod 755 "/tmp/dkms"
+
 # Define arguments for the NVIDIA installer script.
 args=""
 args+=" --force-libglx-indirect"
@@ -175,7 +186,7 @@ if [[ "$inst_file" =~ $path_regex1 ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
     # shellcheck disable=SC2086
-    sudo bash "$inst_file" $args 2>/dev/null
+    sudo bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
     status=$?
 
 else
@@ -223,13 +234,15 @@ else
 
     # Run the installer
     # shellcheck disable=SC2086
-    sudo ./nvidia-installer $args 2>/dev/null
+    sudo bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
     status=$?
 
     # Clean up
     cd "/tmp" || exit
     sudo rm -rf "/tmp/nvidia-redist.$$"
 fi
+
+sudo rm -f "/tmp/dkms"
 
 # Terminate here if the NVIDIA installation failed.
 if [[ $status -ne 0 ]]; then

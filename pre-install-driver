@@ -39,7 +39,7 @@ installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
 # Install c-basic, transcoding-support, and Dynamic Kernel Module System (DKMS).
 
 for bundle_name in \
-    c-basic kernel-lts2021 kernel-lts2021-dkms transcoding-support x11-server \
+    c-basic transcoding-support x11-server \
 ;do
     if [[ ! ${installed_bundles} == *" ${bundle_name} "* ]]; then
         add_list+=" ${bundle_name}"
@@ -60,11 +60,9 @@ variant_list=$(
     sort -u
 )
 for variant in $variant_list; do
-    if [[ "$variant" != "lts2021" ]]; then
-        if [[ ! ${installed_bundles} == *" kernel-${variant}-dkms "* ]]; then
-            echo "Installing the kernel-${variant}-dkms bundle."
-            add_list+=" kernel-${variant}-dkms"
-        fi
+    if [[ ! ${installed_bundles} == *" kernel-${variant}-dkms "* ]]; then
+        echo "Installing the kernel-${variant}-dkms bundle."
+        add_list+=" kernel-${variant}-dkms"
     fi
 done
 

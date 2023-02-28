@@ -75,7 +75,9 @@ sudo rm -f /usr/lib32/libGLESv2.so
 sudo rm -f /usr/lib32/libGL.so
 sudo rm -f /usr/lib32/libOpenCL.so
 sudo rm -f /usr/lib32/libOpenGL.so
+sudo rm -f /usr/lib64/libOpenCL.so
 sudo rm -f /usr/lib64/libnvidia-*
+sudo rm -f /usr/lib64/gbm/nvidia-drm_gbm.so
 sudo rm -f /var/log/nvidia-installer.log
 
 sudo ldconfig

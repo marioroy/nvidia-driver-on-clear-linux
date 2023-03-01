@@ -119,6 +119,7 @@ EOF
 fi
 
 # Add NVIDIA paths to the Xorg configuration.
+# For some reason, the installer may choose either location. Do not remove.
 if [[ ! -f "/etc/X11/xorg.conf.d/nvidia-modules.conf" ]]; then
     echo "Adding NVIDIA paths to the Xorg configuration."
     sudo tee "/etc/X11/xorg.conf.d/nvidia-modules.conf" >/dev/null <<'EOF'

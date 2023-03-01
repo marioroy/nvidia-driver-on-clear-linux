@@ -8,7 +8,7 @@ An automation **how-to** for installing the NVIDIA proprietary driver on Clear L
 
 *Planning on running the native 6.2 kernel? Install NVIDIA driver 525 minimally. The v520 modules do not build successfully.*
 
-*Using a NVIDIA Optimus laptop? Select the "lts kernel" in "Advanced options" and later install the 520 driver.
+*Using a NVIDIA Optimus laptop? Select the "lts kernel" in "Advanced options" and later install the 520 driver.*
 
 ## Clear Linux OS installation and updates
 

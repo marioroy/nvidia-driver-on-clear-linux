@@ -6,9 +6,9 @@ An automation **how-to** for installing the NVIDIA proprietary driver on Clear L
 
 *Starting fresh? Obtain a recent Clear Linux image, 38300 or later, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running < 38270 and updating the OS >= 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.*
 
-*Planning on running the native 6.2 kernel? Install NVIDIA driver 525 or later. The v520 modules do not build successfully.*
+*Planning on running the native 6.2 kernel? Install NVIDIA driver 525 minimally. The v520 modules do not build successfully.*
 
-*Using a NVIDIA Optimus laptop? Select the 'lts kernel' in 'Advanced options' and later install the 520 driver. See also, [tip by leiniercs](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499/3).*
+*Using a NVIDIA Optimus laptop? Select the "lts kernel" in "Advanced options" and later install the 520 driver. See also, [tip by leiniercs](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499/3).*
 
 ## Clear Linux OS installation and updates
 

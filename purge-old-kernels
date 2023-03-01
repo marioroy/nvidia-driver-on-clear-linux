@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2012
+# shellcheck source=/dev/null
+
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+ 
+# Purge old kernel revisions from the system.
+# Usage: purge-old-kernels
+
+if [[ ${1} = "help" ]]; then
+    echo "usage: purge-old-kernels"
+    exit 1
+fi
+
+if [[ ! -x "/usr/bin/dkms" ]]; then
+    echo "The dkms package is not installed, exiting."
+    exit 1
+fi
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+# Get nvidia/version.
+cd "/var/lib/dkms" || exit
+nvver=$(ls -1d "nvidia"/[0-9]* 2>/dev/null | tail -1)
+
+# Purge old kernel revisions from the system.
+cd "/usr/lib/modules" || exit
+
+for kver in $(ls -1d [0-9]* | cut -f1-2 -d. | sort -nu); do
+
+    count=$(ls -1d "$kver".* | wc -l)
+    [[ ${count} -eq 1 ]] && continue
+
+    count=$((count - 1))
+    for variant in $(ls -1d "$kver".* | sort -n | head -${count}); do
+        # ex "Purging 5.15.95-39.lts2021"
+        echo "Purging $variant"
+        if [[ "$nvver" ]]; then
+            # ex dkms remove "nvidia/525.89.02" -k "5.15.95-39.lts2021"
+            sudo dkms remove "$nvver" -k "$variant" >/dev/null 2>&1
+        fi
+        # ex clr-boot-manager remove-kernel "org.clearlinux.lts2021.5.15.95-39"
+        sudo clr-boot-manager remove-kernel "org.clearlinux.${variant##*.}.${variant%.*}"
+    done
+
+done
+

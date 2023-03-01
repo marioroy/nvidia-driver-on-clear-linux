@@ -23,10 +23,10 @@ sudo swupd update
 sudo reboot
 ```
 
-Purge old kernel files, if any. This is something I run after an OS update, but requires the reboot cycle in the prior step or nothing will purge.
+Purge old kernel files, if any. This is something I run after an OS update followed by a reboot cycle. You may omit this step if there were no kernel updates.
 
 ```bash
-sudo clr-boot-manager update
+bash ./purge-old-kernels
 ```
 
 ## NVIDIA driver installation

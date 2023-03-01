@@ -19,6 +19,7 @@ fi
 sudo id >/dev/null || exit 2
 
 # Create directories.
+sudo mkdir -p /etc/gdm
 sudo mkdir -p /etc/kernel/cmdline.d
 sudo mkdir -p /etc/kernel/cmdline-removal.d
 sudo mkdir -p /etc/ld.so.conf.d
@@ -89,6 +90,7 @@ if [[ "$action" = "update" ]]; then
     sudo rm -f /etc/swupd/config
     sudo rm -f /etc/systemd/system/fix-nvidia-libGL-trigger.service
     sudo rm -f /etc/X11/xorg.conf.d/nvidia-files-opt.conf
+    sudo rm -f /etc/X11/xorg.conf.d/nvidia-modules.conf
 
     # remove old configurations, now configured via boot parameters
     sudo rm -f /etc/modprobe.d/disable-nouveau.conf
@@ -102,6 +104,28 @@ if [[ ! -f "/etc/modprobe.d/nvidia-uvm.conf" ]]; then
     sudo tee "/etc/modprobe.d/nvidia-uvm.conf" >/dev/null <<'EOF'
 # autoload nvidia_uvm module after nvidia module
 softdep nvidia post: nvidia_uvm
+EOF
+fi
+
+# Add configuration file for GNOME Destop Manager.
+# It will not be modified or removed to preserve user customization.
+if [[ ! -f "/etc/gdm/custom.conf" ]]; then
+    echo "Adding configuration file for GNOME Destop Manager."
+    sudo tee "/etc/gdm/custom.conf" >/dev/null <<'EOF'
+[daemon]
+# Uncomment the line below to force the login screen to use Xorg
+#WaylandEnable=false
+EOF
+fi
+
+# Add NVIDIA paths to the Xorg configuration.
+if [[ ! -f "/etc/X11/xorg.conf.d/nvidia-modules.conf" ]]; then
+    echo "Adding NVIDIA paths to the Xorg configuration."
+    sudo tee "/etc/X11/xorg.conf.d/nvidia-modules.conf" >/dev/null <<'EOF'
+Section "Files"
+    ModulePath "/usr/lib64/xorg/modules"
+    ModulePath "/opt/nvidia/lib64/xorg/modules"
+EndSection
 EOF
 fi
 

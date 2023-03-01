@@ -331,7 +331,7 @@ Section "OutputClass"
     MatchDriver "nvidia-drm"
     Driver "nvidia"
     Option "AllowEmptyInitialConfiguration"
-    Option "PrimaryGPU" "yes"
+    Option "PrimaryGPU" "yes" # This can be commented if wanted Intel as primary GPU
     Option "SLI" "Auto"
     Option "BaseMosaic" "on"
 EndSection
@@ -340,6 +340,7 @@ Section "OutputClass"
     Identifier "intel"
     MatchDriver "i915"
     Driver "modesetting"
+    Option "AccelMethod" "none" # Comment when using Intel as primary
 EndSection
 EOF
 

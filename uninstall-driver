@@ -38,6 +38,7 @@ sudo rm -f /etc/swupd/config
 sudo rm -f /etc/systemd/system/fix-nvidia-libGL-trigger.service
 sudo rm -f /etc/systemd/system/update-triggers.target.wants/fix-nvidia-libGL-trigger.service
 sudo rm -f /etc/X11/xorg.conf.d/nvidia-files-opt.conf
+sudo rm -f /etc/X11/xorg.conf.d/nvidia-modules.conf
 
 # remove configurations from older nvidia-driver-on-clear-linux installations
 sudo rm -f /etc/modprobe.d/disable-nouveau.conf

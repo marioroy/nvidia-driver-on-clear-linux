@@ -82,7 +82,6 @@ if [[ "$action" = "update" ]]; then
     sudo rm -f /etc/ld.so.conf.d/local.conf
     sudo rm -f /etc/ld.so.conf
     sudo rm -f /etc/kernel/cmdline.d/blacklist-nouveau.conf
-    sudo rm -f /etc/kernel/cmdline.d/ibt.conf
     sudo rm -f /etc/kernel/cmdline.d/ignore-mod-sig.conf
     sudo rm -f /etc/kernel/cmdline.d/nvidia-drm.conf
     sudo rm -f /etc/kernel/cmdline.d/rcu.conf
@@ -152,17 +151,6 @@ if [[ ! -f "/etc/kernel/cmdline.d/blacklist-nouveau.conf" ]]; then
     echo "Blacklisting nouveau via boot parameters."
     sudo tee "/etc/kernel/cmdline.d/blacklist-nouveau.conf" >/dev/null <<'EOF'
 rd.driver.blacklist=nouveau,nvidiafb,snd-pcsp modprobe.blacklist=nouveau,nvidiafb,snd-pcsp
-EOF
-fi
-
-# Disable Indirect Branch Tracking.
-# nvidia may not boot on Linux 5.18 (or later) on systems with Intel CPUs.
-# Until this is fixed, a workaround (deemed safe) is disabling IBT.
-if [[ ! -f "/etc/kernel/cmdline.d/ibt.conf" ]]; then
-    update_boot=1
-    echo "Disabling Indirect Branch Tracking via boot parameters."
-    sudo tee "/etc/kernel/cmdline.d/ibt.conf" >/dev/null <<'EOF'
-ibt=off
 EOF
 fi
 

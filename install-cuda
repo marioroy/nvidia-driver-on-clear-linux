@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # CUDA installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-cuda latest | auto | <valid_pathname>
+# Usage: ./install-cuda auto|latest|<valid_pathname>
 #
 # CUDA Toolkit Archive
 #   https://developer.nvidia.com/cuda-toolkit-archive
@@ -28,7 +28,7 @@ inst_file=""
 path_regex="cuda[0-9\.\_]+linux\.run$"
 
 case "$1" in
-    auto) if [[ " 525 520 515 510 " == *" ${version} "* ]]; then
+    auto) if [[ " 530 525 520 515 510 " == *" ${version} "* ]]; then
               exec ${0} "${version}"
           else
               exec ${0} "latest"
@@ -59,6 +59,7 @@ case "$1" in
           inst_url="https://developer.download.nvidia.com/compute/cuda/${in}"
           ;;
 
+     530) inst_url="https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run" ;;
      525) inst_url="https://developer.download.nvidia.com/compute/cuda/12.0.1/local_installers/cuda_12.0.1_525.85.12_linux.run" ;;
      520) inst_url="https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run" ;;
      515) inst_url="https://developer.download.nvidia.com/compute/cuda/11.7.1/local_installers/cuda_11.7.1_515.65.01_linux.run" ;;
@@ -71,7 +72,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest | auto | <valid_pathname>"
+              echo "Usage: ${0##*/} auto|latest|<valid_pathname>"
               exit 1
           fi
 esac

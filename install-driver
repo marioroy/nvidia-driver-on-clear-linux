@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest |525|520|515|510| <valid_pathname>
+# Usage: ./install-driver beta|latest|525|520|515|510|<valid_pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -59,6 +59,7 @@ path_regex1="NVIDIA-Linux-x86_64-.*\.run$"
 path_regex2="nvidia_driver-linux-x86_64-.*-archive\.tar\.xz"
 
 case "$1" in
+    beta) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/530.30.02/NVIDIA-Linux-x86_64-530.30.02.run" ;;
   latest) echo "Retrieving latest information from the web."
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
@@ -87,7 +88,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest |525|520|515|510| <valid_pathname>"
+              echo "Usage: ${0##*/} beta|latest|525|520|515|510|<valid_pathname>"
               exit 1
           fi
 esac
@@ -182,13 +183,14 @@ args+=" --no-nouveau-check"
 args+=" --silent"
 args+=" --dkms"
 
+nvver=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
+
 if [[ "$inst_file" =~ $path_regex1 ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
     # shellcheck disable=SC2086
     sudo bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
     status=$?
-
 else
     # Installation via a CUDA redistributable driver file
     inst_ver=$(echo "$inst_file" | cut -f4 -d-)
@@ -252,17 +254,30 @@ if [[ $status -ne 0 ]]; then
 fi
 
 # Configure NVD_BACKEND, system-wide if needed.
-version=$(head -1 /proc/driver/nvidia/version | awk '{ print $8 }')
-
-if [[ ${version%%.*} -lt 525 ]]; then
-    sudo rm -f /etc/environment.d/10-nvidia-vaapi-driver.conf
+if [[ ${nvver} -lt 525 ]]; then
+    sudo rm -f "/etc/environment.d/10-nvidia-vaapi-driver.conf"
 else
-    sudo mkdir -p /etc/environment.d
-    sudo tee /etc/environment.d/10-nvidia-vaapi-driver.conf >/dev/null <<'EOF'
+    sudo mkdir -p "/etc/environment.d"
+    sudo tee "/etc/environment.d/10-nvidia-vaapi-driver.conf" >/dev/null <<'EOF'
 # The EGL backend (which is still the default) was broken in the 525 driver
 # series, so the direct backend is necessary for decoding to work.
 NVD_BACKEND=direct
 EOF
+fi
+
+# Disable Indirect Branch Tracking.
+# nvidia may not boot on Linux 5.18 (or later) on systems with Intel CPUs.
+# Until this is fixed (530), a workaround (deemed safe) is disabling IBT.
+if [[ ${nvver} -ge 530 ]]; then
+    if [[ -e "/etc/kernel/cmdline.d/ibt.conf" ]]; then
+        sudo rm -f "/etc/kernel/cmdline.d/ibt.conf"
+        sudo clr-boot-manager update
+    fi
+else
+    sudo tee "/etc/kernel/cmdline.d/ibt.conf" >/dev/null <<'EOF'
+ibt=off
+EOF
+    sudo clr-boot-manager update
 fi
 
 # Default to "gnome-wayland" for the login session.

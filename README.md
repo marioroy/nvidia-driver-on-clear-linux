@@ -2,11 +2,15 @@
 
 An automation **how-to** for installing the NVIDIA proprietary driver on Clear Linux OS.
 
-## Clear Linux OS installation and updates
+## Preparation
 
 *Starting fresh? Obtain a recent Clear Linux image, 38300 or later, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running < 38270 and updating the OS >= 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.*
 
-*Using a NVIDIA Optimus laptop? Select the lts kernel in 'Advanced options' and later install the 520 driver. See also, [tip by leiniercs](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499/3).*
+*Planning on running the native 6.2 kernel? Install NVIDIA driver 525 or later. The v520 modules do not build successfully.*
+
+*Using a NVIDIA Optimus laptop? Select the 'lts kernel' in 'Advanced options' and later install the 520 driver. See also, [tip by leiniercs](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499/3).*
+
+## Clear Linux OS installation and updates
 
 Depending on the CL release, the open-source nouveau driver may not work with recent NVIDIA graphics (3000 series or later). The solution is to install the OS in text mode. Press the letter `e` on the boot screen and prepend `nomodeset 3` with a space to the list of kernel arguments. The OS will boot into multi-user mode and prevent the nouveau driver from loading. Press enter to boot the OS. Instructions are provided on the screen for running the installer.
 
@@ -48,15 +52,16 @@ Next, run the driver installer script. Running the LTS kernel? Choose any driver
 
 | Driver |  Version    |
 |--------|-------------|
+| beta   | 530.30.02   |
 | latest | 525.89.02   |
-|  525   | 525.89.02   |
-|  520   | 520.61.05   |
-|  515   | 515.86.01   |
-|  510   | 510.108.03  |
+| 525    | 525.89.02   |
+| 520    | 520.61.05   |
+| 515    | 515.86.01   |
+| 510    | 510.108.03  |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest |525|520|515|510| <valid_pathname>
+Usage: install-driver beta|latest|525|520|515|510|<valid_pathname>
 
 $ bash ./install-driver 525
 $ bash ./check-kernel-dkms
@@ -69,6 +74,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
+|  530   |    12.1.0    |
 |  525   |    12.0.1    |
 |  520   |    11.8.0    |
 |  515   |    11.7.1    |
@@ -76,7 +82,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 ```bash
 $ bash ./install-cuda help
-Usage: install-cuda latest | auto | <valid_pathname>
+Usage: install-cuda auto|latest|<valid_pathname>
 
 $ bash ./install-cuda auto    # or path to run file
 $ bash ./install-cuda ~/Downloads/cuda_12.0.1_525.85.12_linux.run

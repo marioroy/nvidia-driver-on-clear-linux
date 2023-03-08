@@ -35,7 +35,7 @@ if [[ -d /proc/driver/nvidia && -f /usr/lib64/dri/nvidia_drv_video.so ]]; then
     export LIBVA_DRIVER_NAME=nvidia
     export MOZ_DISABLE_RDD_SANDBOX=1
 
-    # Set MOZ_DRM_DEVICE /dev/dri/renderD128 (D129?) or by device path
+    # Set MOZ_DRM_DEVICE /dev/dri/renderD128 (D129?) or by device path.
     # https://github.com/elFarto/nvidia-vaapi-driver/issues/179
     nvidia_gpu=$(ls "/proc/driver/nvidia/gpus" | tail -1)
     export MOZ_DRM_DEVICE="/dev/dri/by-path/pci-${nvidia_gpu}-render"
@@ -44,6 +44,9 @@ if [[ -d /proc/driver/nvidia && -f /usr/lib64/dri/nvidia_drv_video.so ]]; then
     # series, so the direct backend is necessary for decoding to work.
     version=$(head -1 /proc/driver/nvidia/version | awk '{ print $8 }')
     [[ ${version%%.*} -ge 525 ]] && export NVD_BACKEND=direct
+else
+    # Default to renderD128.
+    export MOZ_DRM_DEVICE="/dev/dri/renderD128"
 fi
 
 # Optionally, uncomment one of the following matching your configuration.

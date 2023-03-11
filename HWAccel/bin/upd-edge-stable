@@ -7,17 +7,17 @@
 # shellcheck disable=SC2001,SC2143,SC2164
 
 suffix=$(
-   curl -s "https://packages.microsoft.com/yumrepos/edge/" |\
+   curl -s "https://packages.microsoft.com/yumrepos/edge/Packages/m/" |\
    grep "stable-" | cut -d'"' -f2 | cut -d- -f4- | sort -n |\
    tail -1
 )
 
-URL="https://packages.microsoft.com/yumrepos/edge/microsoft-edge-stable-${suffix}"
+URL="https://packages.microsoft.com/yumrepos/edge/Packages/m/microsoft-edge-stable-${suffix}"
 FILE="${URL##*/}"
 
 if [[ -z "$FILE" ]]; then
    echo "ERROR: microsoft-edge-stable-*.rpm (No such file at download URL)"
-   echo "https://packages.microsoft.com/yumrepos/edge/"
+   echo "https://packages.microsoft.com/yumrepos/edge/Packages/m/"
    exit 1
 fi
 

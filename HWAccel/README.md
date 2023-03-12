@@ -70,7 +70,7 @@ media.ffmpeg.vaapi.enabled                     true
 Required, enables hardware VA-API decoding support for WebRTC (e.g. Google Meet).
 media.navigator.mediadatadecoder_vpx_enabled   true
 
-Required, for HW acceleration to work using NVIDIA 470 series drivers.
+Required, for HW acceleration to work using NVIDIA driver 470 (or later series).
 widget.dmabuf.force-enabled                    true
 
 Required, leave this setting true to use the internal decoders for VP8/VP9.

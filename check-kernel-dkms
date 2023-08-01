@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2045
+# shellcheck source=/dev/null
+
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+ 
+# Check dkms script, refreshing NVIDIA kernel modules as needed.
+# Usage: check-kernel-dkms
+
+if [[ ${1} = "help" ]]; then
+    echo "usage: check-kernel-dkms"
+    exit 1
+fi
+
+if [[ ! -x "/usr/bin/dkms" ]]; then
+    echo "The dkms package is not installed, exiting."
+    exit 1
+fi
+
+if [[ ! -d "/var/lib/dkms/nvidia" ]]; then
+    echo "NVIDIA driver not installed with --dkms option, exiting."
+    exit 1
+fi
+
+###############################################################################
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+add_list=""
+
+# Extract installed bundles; append space to the end of each line.
+installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
+
+# Install the Dynamic Kernel Module System (DKMS) bundles.
+variant_list=$(
+    for kernel in $(ls -1 "/usr/lib/modules"); do
+        if [[ ! -f "/usr/lib/modules/${kernel}/build/Makefile" ]]; then
+            if [[ -f "/usr/lib/modules/${kernel}/modules.dep" ]]; then
+                echo "${kernel##*.}"
+            fi
+        fi
+    done |\
+    sort -u
+)
+for variant in $variant_list; do
+    if [[ ! ${installed_bundles} == *" kernel-${variant}-dkms "* ]]; then
+        echo "Installing the kernel-${variant}-dkms bundle."
+        add_list+=" kernel-${variant}-dkms"
+    fi
+done
+
+if [[ ${installed_bundles} == *" kernel-lts "* ]]; then
+    if [[ ! ${installed_bundles} == *" kernel-lts-dkms "* ]]; then
+        echo "Installing also, kernel-lts-dkms as kernel-lts is present."
+        add_list+=" kernel-lts-dkms"
+    fi
+fi
+
+if [[ -n "$add_list" ]]; then
+    # shellcheck disable=SC2086
+    sudo swupd bundle-add $add_list || exit $?
+    echo
+fi
+
+###############################################################################
+
+# Double-check all kernels on the system.
+for variant in $(ls -1 "/usr/lib/modules"); do
+    if [[ -f "/usr/lib/modules/${variant}/modules.dep" ]]; then
+        echo "Checking dkms modules in ${variant}."
+        sudo dkms autoinstall -k "${variant}" --force >/dev/null
+        sudo depmod -A "${variant}"
+    elif [[ -d "/var/lib/dkms/nvidia/kernel-${variant}-x86_64" ]]; then
+        echo "Removing staled dkms files for ${variant}."
+        sudo rm -rf "/var/lib/dkms/nvidia/kernel-${variant}-x86_64"
+    fi
+done
+

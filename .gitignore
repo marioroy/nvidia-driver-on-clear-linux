@@ -1,0 +1,26 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+*.bak
+*.log
+*.old
+*.out
+*.swp
+*.tmp
+
+/Downloads*
+NVIDIA-Linux*
+cuda_*_linux*
+
+/HWAccel/requires/pkg.list*
+/HWAccel/requires/PKGS*
+
+/HWAccel/rpmbuild/BUILD*
+/HWAccel/rpmbuild/RPMS*
+/HWAccel/rpmbuild/SOURCES*
+/HWAccel/rpmbuild/SRPMS*
+

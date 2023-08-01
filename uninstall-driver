@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Uninstaller script for NVIDIA driver on Clear Linux OS.
+# Usage: ./uninstall-driver
+
+# The uninstaller requires a non-graphical environment.
+contflag=1 state=$(systemctl is-active graphical.target 2>&1)
+
+if [[ "$state" == "active" ]]; then
+    contflag=0
+elif [[ -n $(pidof gnome-shell) || -n $(pidof xdg-desktop-portal) ]]; then
+    contflag=0
+fi
+
+if [[ $contflag -eq 0 ]]; then
+    echo "Reboot into multi-user mode to uninstall the driver."
+    echo "Press the letter 'e' at the boot menu and prepend '3 '".
+    exit 1  
+fi
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+###############################################################################
+
+# Reset configuration.
+echo "Resetting configuration."
+sudo rm -f /etc/modprobe.d/nvidia-uvm.conf
+sudo rm -f /etc/ld.so.conf.d/nvidia.conf
+sudo rm -f /etc/kernel/cmdline.d/blacklist-nouveau.conf
+sudo rm -f /etc/kernel/cmdline.d/ignore-mod-sig.conf
+sudo rm -f /etc/kernel/cmdline.d/nvidia-drm.conf
+sudo rm -f /etc/kernel/cmdline.d/rcu.conf
+sudo rm -f /etc/kernel/cmdline-removal.d/intel-iommu.conf
+sudo rm -f /etc/swupd/config
+sudo rm -f /etc/systemd/system/fix-nvidia-libGL-trigger.service
+sudo rm -f /etc/systemd/system/update-triggers.target.wants/fix-nvidia-libGL-trigger.service
+sudo rm -f /etc/X11/xorg.conf.d/nvidia-files-opt.conf
+sudo rm -f /etc/X11/xorg.conf.d/nvidia-modules.conf
+
+# remove configurations from older nvidia-driver-on-clear-linux installations
+sudo rm -f /etc/modprobe.d/disable-nouveau.conf
+sudo rm -f /etc/modprobe.d/nvidia-disable-nouveau.conf
+sudo rm -f /etc/modprobe.d/enable-nvidia-modeset.conf
+
+echo "Reloading the systemd manager configuration."
+sudo systemctl daemon-reload
+
+echo "Refreshing the dynamic linker run-time cache."
+sudo ldconfig
+
+echo "Refreshing the boot configuration."
+sudo clr-boot-manager update
+
+###############################################################################
+
+# Support also, older nvidia-driver-on-clear-linux installations.
+
+echo "Uninstalling the NVIDIA driver."
+if [[ -x "/usr/bin/nvidia-uninstall" ]]; then
+    sudo /usr/bin/nvidia-uninstall --silent
+elif [[ -x "/opt/nvidia/bin/nvidia-uninstall" ]]; then
+    sudo /opt/nvidia/bin/nvidia-uninstall --silent
+fi
+
+sudo rm -rf /opt/nvidia
+
+sudo rm -f /etc/udev/rules.d/61-gdm.rules
+sudo rm -f /etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf
+sudo rm -f /etc/X11/xorg.conf
+sudo rm -f /usr/lib32/libEGL.so
+sudo rm -f /usr/lib32/libGLESv1_CM.so
+sudo rm -f /usr/lib32/libGLESv2.so
+sudo rm -f /usr/lib32/libGL.so
+sudo rm -f /usr/lib32/libOpenCL.so
+sudo rm -f /usr/lib32/libOpenGL.so
+sudo rm -f /usr/lib64/libOpenCL.so
+sudo rm -f /usr/lib64/libnvidia-*
+sudo rm -f /usr/lib64/gbm/nvidia-drm_gbm.so
+sudo rm -f /var/log/nvidia-installer.log
+
+sudo ldconfig
+
+[[ -n ${SUDO_USER} ]] && user=$SUDO_USER || user=$USER
+rm -f "/home/${user}/.local/share/applications/nvidia-settings.desktop"
+
+sudo rm -f /usr/bin/nvidia-modprobe
+sudo rm -f /usr/local/bin/nvidia-settings
+sudo rm -f /usr/local/bin/nvidia-smi
+
+echo "Repairing the lib-opengl bundle via swupd."
+sudo swupd repair -x --bundles=lib-opengl --quiet | grep -v fixed
+
+sync
+echo "Please reboot the system."
+

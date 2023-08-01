@@ -1,0 +1,397 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2045,SC2164
+# shellcheck source=/dev/null
+
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Driver pre-install script for NVIDIA graphics on Clear Linux OS.
+# Usage: ./pre-install-driver [ update ]
+
+action="$1"
+
+if [[ -n "$action" && "$action" != "update" ]]; then
+    echo "Usage: ${0##*/} [ update ]"
+    exit 1
+fi
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+# Create directories.
+sudo mkdir -p /etc/gdm
+sudo mkdir -p /etc/kernel/cmdline.d
+sudo mkdir -p /etc/kernel/cmdline-removal.d
+sudo mkdir -p /etc/ld.so.conf.d
+sudo mkdir -p /etc/modprobe.d
+sudo mkdir -p /etc/swupd
+sudo mkdir -p /etc/X11/xorg.conf.d
+sudo mkdir -p /opt/nvidia/lib32
+sudo mkdir -p /opt/nvidia/lib64
+
+###############################################################################
+
+osver=$(source "/etc/os-release"; echo "$VERSION_ID")
+add_list=""
+
+# Extract installed bundles; append space to the end of each line.
+installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
+
+# Install c-basic, transcoding-support, and Dynamic Kernel Module System (DKMS).
+
+for bundle_name in \
+    c-basic transcoding-support x11-server \
+;do
+    if [[ ! ${installed_bundles} == *" ${bundle_name} "* ]]; then
+        add_list+=" ${bundle_name}"
+    fi
+done
+if [[ -n "$add_list" ]]; then
+    echo "Installing c-basic for compiler and other dependencies."
+fi
+
+variant_list=$(
+    for kernel in $(ls -1 "/usr/lib/modules"); do
+        if [[ ! -f "/usr/lib/modules/${kernel}/build/Makefile" ]]; then
+            if [[ -f "/usr/lib/modules/${kernel}/modules.dep" ]]; then
+                echo "${kernel##*.}"
+            fi
+        fi
+    done |\
+    sort -u
+)
+for variant in $variant_list; do
+    if [[ ! ${installed_bundles} == *" kernel-${variant}-dkms "* ]]; then
+        echo "Installing the kernel-${variant}-dkms bundle."
+        add_list+=" kernel-${variant}-dkms"
+    fi
+done
+
+if [[ -n ${add_list} ]]; then
+    # shellcheck disable=SC2086
+    sudo swupd bundle-add $add_list || exit $?
+    echo
+fi
+
+###############################################################################
+
+# Update configuration.
+if [[ "$action" = "update" ]]; then
+    echo "Resetting configuration."
+    sudo rm -f /etc/modprobe.d/nvidia-uvm.conf
+    sudo rm -f /etc/ld.so.conf.d/nvidia.conf
+    sudo rm -f /etc/ld.so.conf.d/local.conf
+    sudo rm -f /etc/ld.so.conf
+    sudo rm -f /etc/kernel/cmdline.d/blacklist-nouveau.conf
+    sudo rm -f /etc/kernel/cmdline.d/ignore-mod-sig.conf
+    sudo rm -f /etc/kernel/cmdline.d/nvidia-drm.conf
+    sudo rm -f /etc/kernel/cmdline.d/rcu.conf
+    sudo rm -f /etc/kernel/cmdline-removal.d/intel-iommu.conf
+    sudo rm -f /etc/swupd/config
+    sudo rm -f /etc/systemd/system/fix-nvidia-libGL-trigger.service
+    sudo rm -f /etc/X11/xorg.conf.d/nvidia-files-opt.conf
+    sudo rm -f /etc/X11/xorg.conf.d/nvidia-modules.conf
+
+    # remove old configurations, now configured via boot parameters
+    sudo rm -f /etc/modprobe.d/disable-nouveau.conf
+    sudo rm -f /etc/modprobe.d/nvidia-disable-nouveau.conf
+    sudo rm -f /etc/modprobe.d/enable-nvidia-modeset.conf
+fi
+
+# Make a soft dependency for nvidia_uvm.
+if [[ ! -f "/etc/modprobe.d/nvidia-uvm.conf" ]]; then
+    echo "Adding a soft dependency for the nvidia_uvm module."
+    sudo tee "/etc/modprobe.d/nvidia-uvm.conf" >/dev/null <<'EOF'
+# autoload nvidia_uvm module after nvidia module
+softdep nvidia post: nvidia_uvm
+EOF
+fi
+
+# Add configuration file for GNOME Destop Manager.
+# It will not be modified or removed to preserve user customization.
+if [[ ! -f "/etc/gdm/custom.conf" ]]; then
+    echo "Adding configuration file for GNOME Destop Manager."
+    sudo tee "/etc/gdm/custom.conf" >/dev/null <<'EOF'
+[daemon]
+# Uncomment the line below to force the login screen to use Xorg
+#WaylandEnable=false
+EOF
+fi
+
+# Add NVIDIA paths to the Xorg configuration.
+# For some reason, the installer may choose either location. Do not remove.
+if [[ ! -f "/etc/X11/xorg.conf.d/nvidia-modules.conf" ]]; then
+    echo "Adding NVIDIA paths to the Xorg configuration."
+    sudo tee "/etc/X11/xorg.conf.d/nvidia-modules.conf" >/dev/null <<'EOF'
+Section "Files"
+    ModulePath "/usr/lib64/xorg/modules"
+    ModulePath "/opt/nvidia/lib64/xorg/modules"
+EndSection
+EOF
+fi
+
+###############################################################################
+
+update_cache=0
+
+# Add paths to the dynamic linker configuration.
+if [[ ! -f "/etc/ld.so.conf.d/nvidia.conf" ]]; then
+    update_cache=1
+    echo "Adding NVIDIA paths to the dynamic linker configuration."
+    sudo tee "/etc/ld.so.conf.d/nvidia.conf" >/dev/null <<'EOF'
+/opt/nvidia/lib64
+/opt/nvidia/lib32
+EOF
+fi
+
+if [[ ! -f "/etc/ld.so.conf.d/local.conf" ]]; then
+    update_cache=1
+    echo "Adding local paths to the dynamic linker configuration."
+    sudo tee "/etc/ld.so.conf.d/local.conf" >/dev/null <<'EOF'
+/usr/local/lib64
+/usr/local/lib
+EOF
+fi
+
+if ! grep -q '^include /etc/ld\.so\.conf\.d/\*\.conf$' /etc/ld.so.conf 2>/dev/null; then
+    update_cache=1
+    echo "Adding include statement to the dynamic linker configuration."
+    sudo tee --append "/etc/ld.so.conf" >/dev/null <<'EOF'
+include /etc/ld.so.conf.d/*.conf
+EOF
+fi
+
+if [[ ${update_cache} -eq 1 ]]; then
+    echo "Refreshing the dynamic linker run-time cache."
+    sudo ldconfig
+fi
+
+###############################################################################
+
+update_boot=0
+
+# Blacklist nouveau via boot parameters.
+if [[ ! -f "/etc/kernel/cmdline.d/blacklist-nouveau.conf" ]]; then
+    update_boot=1
+    echo "Blacklisting nouveau via boot parameters."
+    sudo tee "/etc/kernel/cmdline.d/blacklist-nouveau.conf" >/dev/null <<'EOF'
+rd.driver.blacklist=nouveau,nvidiafb,snd-pcsp modprobe.blacklist=nouveau,nvidiafb,snd-pcsp
+EOF
+fi
+
+# Disable kernel module signature verification.
+if [[ ! -f "/etc/kernel/cmdline.d/ignore-mod-sig.conf" ]]; then
+    update_boot=1
+    echo "Disabling kernel module signature verification."
+    sudo tee "/etc/kernel/cmdline.d/ignore-mod-sig.conf" >/dev/null <<'EOF'
+module.sig_unenforce
+EOF
+fi
+
+# Enable nvidia_drm.modeset via boot parameters.
+if [[ ! -f "/etc/kernel/cmdline.d/nvidia-drm.conf" ]]; then
+    update_boot=1
+    echo "Enabling nvidia_drm.modeset via boot parameters."
+    sudo tee "/etc/kernel/cmdline.d/nvidia-drm.conf" >/dev/null <<'EOF'
+nvidia_drm.modeset=1 initcall_blacklist=simpledrm_platform_driver_init
+EOF
+fi
+
+# Adjust rcupdate and rcutree parameters to rid of rcu_sched stalls.
+# The timeout is set to low in Clear Linux. Setting params to Fedora 37 values.
+# https://github.com/clearlinux/distribution/issues/2795
+if [[ ! -f "/etc/kernel/cmdline.d/rcu.conf" ]]; then
+  # if [[ ${osver} -lt 37960 ]]; then
+        update_boot=1
+        echo "Adjusting rcupdate and rcutree via boot parameters."
+        sudo tee "/etc/kernel/cmdline.d/rcu.conf" >/dev/null <<'EOF'
+rcupdate.rcu_exp_cpu_stall_timeout=21000 rcutree.rcu_nocb_gp_stride=-1
+EOF
+  # fi
+fi
+
+# Remove the intel_iommu boot parameter.
+if [[ ! -f "/etc/kernel/cmdline-removal.d/intel-iommu.conf" ]]; then
+    update_boot=1
+    echo "Removing the kernel intel_iommu=igfx_off boot parameter."
+    sudo tee "/etc/kernel/cmdline-removal.d/intel-iommu.conf" >/dev/null <<'EOF'
+intel_iommu=igfx_off
+EOF
+fi
+
+# Remove (now duplicate) kernel parameter added during Clear Linux installation.
+if [[ -f "/etc/kernel/cmdline" ]]; then
+    line=$(head -1 "/etc/kernel/cmdline")
+    if [[ "$line" == "nomodeset 3" || "$line" == "3" ]]; then
+        update_boot=1
+        sudo rm -f "/etc/kernel/cmdline"
+    elif [[ "$line" == "modprobe.blacklist=nouveau" ]]; then
+        update_boot=1
+        sudo rm -f "/etc/kernel/cmdline"
+    fi
+fi
+
+# Set boot timeout (the default is no timeout).
+if [[ ! -f "/etc/kernel/timeout" ]]; then
+    update_boot=1
+    echo "Setting boot timeout to 5 seconds."
+    sudo tee "/etc/kernel/timeout" >/dev/null <<'EOF'
+5
+EOF
+fi
+
+if [[ ${update_boot} -eq 1 ]]; then
+    echo "Refreshing the boot configuration."
+    sudo clr-boot-manager update
+fi
+
+###############################################################################
+
+# Create ignore list for swupd diagnose and repair.
+if [[ ! -f "/etc/swupd/config" ]]; then
+    echo "Creating ignore list for swupd diagnose and repair."
+    sudo tee "/etc/swupd/config" >/dev/null <<'EOF'
+# Config file for swupd
+
+[diagnose]
+# Options for the "swupd diagnose" command
+
+# Any path completely matching the POSIX extended regular expression is ignored
+# by --picky, matched directories get skipped (string value)
+# Default list: /usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src
+# Extra entries: for NVIDIA Proprietary Driver and CUDA Toolkit
+
+picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|glvnd|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps|/usr/share/icons/hicolor|/usr/share/fonts.*/\.uuid
+
+[repair]
+# Options for the "swupd repair" command
+
+# Any path completely matching the POSIX extended regular expression is ignored
+# by --picky, matched directories get skipped (string value)
+# Default list: /usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src
+# Extra entries: for NVIDIA Proprietary Driver and CUDA Toolkit
+
+picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|glvnd|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps|/usr/share/icons/hicolor|/usr/share/fonts.*/\.uuid
+
+EOF
+fi
+
+###############################################################################
+
+# Create service handler to fix the state of libGL related files.
+if [[ ! -f "/etc/systemd/system/fix-nvidia-libGL-trigger.service" ]]; then
+    echo "Creating service handler to fix the state of libGL related files."
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if [[ ${osver} -ge 38270 ]]; then
+       sudo tee "/etc/systemd/system/fix-nvidia-libGL-trigger.service" >/dev/null <<'EOF'
+[Unit]
+Description=Fixes libGL symlinks for the NVIDIA proprietary driver
+BindsTo=update-triggers.target
+
+[Service]
+Type=oneshot
+
+# Run depmod to refresh modules.dep and map files for the running kernel if needed.
+ExecStart=/usr/bin/depmod -A
+
+# Create symbolic links for development libraries {OpenCL}.
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libOpenCL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libOpenCL.so /usr/lib64/libOpenCL.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libOpenCL.so /usr/lib32/libOpenCL.so'
+
+# Refresh the dynamic-linker cache.
+ExecStart=/usr/bin/sh -c '/usr/bin/ldconfig 2>/dev/null; exit 0'
+EOF
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    else
+       sudo tee "/etc/systemd/system/fix-nvidia-libGL-trigger.service" >/dev/null <<'EOF'
+[Unit]
+Description=Fixes libGL symlinks for the NVIDIA proprietary driver
+BindsTo=update-triggers.target
+
+[Service]
+Type=oneshot
+
+# Run depmod to refresh modules.dep and map files for the running kernel if needed.
+ExecStart=/usr/bin/depmod -A
+
+# Remove the non-development Mesa 3D libraries {EGL, GLESv1_CM, GLESv2, GL}.
+ExecStart=/usr/bin/sh -c '/usr/bin/rm -fv /usr/lib64/glibc-hwcaps/x86-64-v3/libEGL.so* /usr/lib64/libEGL.so.* /usr/lib32/libEGL.so.*'
+ExecStart=/usr/bin/sh -c '/usr/bin/rm -fv /usr/lib64/glibc-hwcaps/x86-64-v3/libGLESv1_CM.so* /usr/lib64/libGLESv1_CM.so.* /usr/lib32/libGLESv1_CM.so.*'
+ExecStart=/usr/bin/sh -c '/usr/bin/rm -fv /usr/lib64/glibc-hwcaps/x86-64-v3/libGLESv2.so* /usr/lib64/libGLESv2.so.* /usr/lib32/libGLESv2.so.*'
+ExecStart=/usr/bin/sh -c '/usr/bin/rm -fv /usr/lib64/glibc-hwcaps/x86-64-v3/libGL.so* /usr/lib64/libGL.so.* /usr/lib32/libGL.so.*'
+
+# Create a symbolic link for /usr/lib/libGL.so.1 if missing.
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; [ -L /usr/lib/libGL.so.1 ] || /usr/bin/ln -sfv /opt/nvidia/$lib/libGL.so.1 /usr/lib/libGL.so.1'
+
+# Create symbolic links for development libraries {EGL, GLESv1_CM, GLESv2, GL, OpenCL, OpenGL}.
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libEGL.so /usr/lib64/libEGL.so'
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libGLESv1_CM.so /usr/lib64/libGLESv1_CM.so'
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libGLESv2.so /usr/lib64/libGLESv2.so'
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libGL.so /usr/lib64/libGL.so'
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libOpenCL.so /usr/lib64/libOpenCL.so'
+ExecStart=/usr/bin/sh -c '[ -f /opt/nvidia/lib64/libGL.so ] && lib=lib64 || lib=lib; /usr/bin/ln -sfv /opt/nvidia/$lib/libOpenGL.so /usr/lib64/libOpenGL.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libEGL.so /usr/lib32/libEGL.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libGLESv1_CM.so /usr/lib32/libGLESv1_CM.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libGLESv2.so /usr/lib32/libGLESv2.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libGL.so /usr/lib32/libGL.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libOpenCL.so /usr/lib32/libOpenCL.so'
+ExecStart=/usr/bin/sh -c '/usr/bin/ln -sfv /opt/nvidia/lib32/libOpenGL.so /usr/lib32/libOpenGL.so'
+
+# Refresh the dynamic-linker cache.
+ExecStart=/usr/bin/sh -c '/usr/bin/ldconfig 2>/dev/null; exit 0'
+EOF
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    fi
+
+    echo "Reloading the systemd manager configuration to pickup the new service."
+    sudo systemctl daemon-reload
+
+    echo "Adding the service as a dependency to the OS updates trigger."
+    sudo systemctl add-wants update-triggers.target fix-nvidia-libGL-trigger.service
+
+    # echo "Below are the commands to run the service manually and obtain status."
+    # echo "sudo systemctl start fix-nvidia-libGL-trigger.service"
+    # echo "systemctl status fix-nvidia-libGL-trigger.service"
+    # echo "journalctl -xeu fix-nvidia-libGL-trigger.service"
+
+    if [[ ${action} = "update" && -d "/proc/driver/nvidia" ]]; then
+        echo "Running the fix-nvidia-libGL-trigger service."
+        sudo systemctl start fix-nvidia-libGL-trigger.service
+    fi
+fi
+
+###############################################################################
+
+# Clear Fraction provides the 'codecs-cuda' bundle, since August 15, 2022.
+# Create symbolic links in /usr/lib64/dri/, if needed, for nvdec_drv_video.so,
+# vdpau_drv_video.so, and nvidia_drv_video.so.
+
+if [[ -d "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri" ]]; then
+    cfdir=/opt/3rd-party/bundles/clearfraction/usr/lib64/dri
+    pushd "/usr/lib64/dri" >/dev/null
+    if [[ ! -e "nvdec_drv_video.so" && -e "$cfdir/nvdec_drv_video.so" ]]; then
+        echo "Creating symbolic link for 'nvdec_drv_video.so' in /usr/lib64/dri/."
+        sudo ln -sfv "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri/nvdec_drv_video.so" .
+    fi
+    if [[ ! -e "vdpau_drv_video.so" && -e "$cfdir/vdpau_drv_video.so" ]]; then
+        echo "Creating symbolic link for 'vdpau_drv_video.so' in /usr/lib64/dri/."
+        sudo ln -sfv "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri/vdpau_drv_video.so" .
+    fi
+    if [[ ! -L "nvidia_drv_video.so" && -e "nvdec_drv_video.so" ]]; then
+        echo "Creating symbolic link for 'nvidia_drv_video.so' in /usr/lib64/dri/."
+        sudo ln -sfv "nvdec_drv_video.so" "nvidia_drv_video.so"
+    fi
+    popd >/dev/null
+fi
+
+sync
+
+# Finish.
+if [[ -z ${action} ]]; then
+    echo "Switching to multi-user target."
+    sudo systemctl isolate multi-user.target
+fi
+

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# CUDA uninstaller script for NVIDIA graphics on Clear Linux OS.
+# Usage: ./uninstall-cuda
+
+if [[ -d "/opt/cuda" ]]; then
+    # Test sudo and exit if wrong password or terminated via Ctrl-C.
+    sudo id >/dev/null || exit 2
+
+    # Note: /usr/local/cuda is a symbolic link to /opt/cuda
+    echo "Uninstalling the NVIDIA CUDA Toolkit."
+    sudo rm -fr /usr/local/cuda /opt/cuda /etc/ld.so.conf.d/cuda-*.conf
+    sudo rm -f /etc/environment.d/10-nvidia-cuda.conf
+
+    echo "Refreshing the dynamic linker run-time cache."
+    sudo ldconfig
+
+    sync
+fi
+
+echo "Done"
+

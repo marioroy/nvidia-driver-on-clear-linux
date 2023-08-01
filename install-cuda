@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2143
+# shellcheck source=/dev/null
+
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# CUDA installer script for NVIDIA graphics on Clear Linux OS.
+# Usage: ./install-cuda auto|latest|12.2|12.1|12.0|11.8|<valid_pathname>
+#
+# CUDA Toolkit Archive
+#   https://developer.nvidia.com/cuda-toolkit-archive
+#   https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
+
+# The installer requires NVIDIA driver pre-installed.
+if [[ ! -d /proc/driver/nvidia ]]; then
+    echo "Please install the NVIDIA proprietary driver first."
+    exit 1
+fi
+
+###############################################################################
+
+version=$(head -1 /proc/driver/nvidia/version | awk '{ print $8 }')
+version=${version%%.*} # extract major
+
+# Parse command-line arguments.
+inst_file=""
+path_regex="cuda[0-9\.\_]+linux\.run$"
+
+case "$1" in
+    auto) if [[ " 535 530 525 520 " == *" ${version} "* ]]; then
+              exec ${0} "${version}"
+          else
+              exec ${0} "latest"
+          fi
+          ;;
+
+  latest) echo "Retrieving latest information from the web."
+          in=$( curl -sL "https://developer.nvidia.com/cuda-downloads" | perl -le '
+
+              # Slurp the entire content into a variable
+              $in = join("", <>);
+
+              # Extract the first *_linux.run entry
+              $in =~ m!([0-9\.]+\\/local_installers\\/cuda[0-9\.\_]+_linux\.run)!;
+              $in = $1;
+
+              # Strip \ character(s) from the path e.g. \/ becomes /
+              $in =~ s!\\!!g;
+
+              print $in;
+          ')
+
+          if [[ -z "${in}" || ${#in} -gt 80 ]]; then
+              echo "ERROR: Something went wrong while parsing the download page."
+              exit 1
+          fi
+
+          inst_url="https://developer.download.nvidia.com/compute/cuda/${in}"
+          ;;
+
+12.2|535) inst_url="https://developer.download.nvidia.com/compute/cuda/12.2.0/local_installers/cuda_12.2.0_535.54.03_linux.run"
+          ;;
+
+12.1|530) inst_url="https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda_12.1.1_530.30.02_linux.run"
+          ;;
+
+12.0|525) inst_url="https://developer.download.nvidia.com/compute/cuda/12.0.1/local_installers/cuda_12.0.1_525.85.12_linux.run"
+          ;;
+
+11.8|520) inst_url="https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run"
+          ;;
+
+       *) if [[ "$1" =~ $path_regex ]]; then
+              if [[ ! -f "$1" ]]; then
+                  echo "ERROR: Cannot open '$1' (No such file)"
+                  exit 1
+              fi
+              inst_file="$1"
+          else
+              echo "Usage: ${0##*/} auto|latest|12.2|12.1|12.0|11.8|<valid_pathname>"
+              exit 1
+          fi
+esac
+
+# Download the CUDA installer from the web.
+[[ -z ${inst_file} ]] && inst_file="${inst_url##*/}"
+[[ -n ${SUDO_USER} ]] && user=$SUDO_USER || user=$USER
+
+if [[ ! -s "$inst_file" ]]; then
+    inst_file="Downloads/$inst_file"
+    if [[ ! -s "$inst_file" ]]; then
+        if [[ ! -d Downloads && ! -L Downloads ]]; then
+            echo "Creating symbolic link." 
+            ln -sfv "/home/${user}/Downloads" "Downloads"
+        fi
+        echo "Downloading ${inst_file##*/} from https://developer.nvidia.com/..."
+        curl -O --output-dir "Downloads" "$inst_url"
+        if [[ ! -f "$inst_file" || -n $(grep "404 - Not Found" "$inst_file") ]]; then
+            rm -f "$inst_file"
+            echo "ERROR: ${inst_file##*/} (No such file)"
+            echo "ERROR: At https://developer.nvidia.com/cuda-toolkit-archive"
+            exit 1
+        fi
+    fi
+fi
+
+###############################################################################
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+# Extract installed bundles; append space to the end of each line.
+installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
+
+# Add bundles if missing, for openGL and support of the CUDA samples.
+# Skipping this will result in "missing recommended libraries" message.
+
+add_list=""
+
+for bundle_name in \
+    c-basic devpkg-glu devpkg-libX11 devpkg-libXi devpkg-libXmu \
+;do
+    if [[ ! ${installed_bundles} == *" - ${bundle_name} "* ]]; then
+        add_list+=" ${bundle_name}"
+    fi
+done
+
+if [[ -n "$add_list" ]]; then
+    add_list=${add_list## } # remove leading whitespace
+    echo "Installing bundle(s) $add_list."
+    # shellcheck disable=SC2086
+    sudo swupd bundle-add $add_list
+    sudo ldconfig
+    echo
+fi
+
+# Remove existing CUDA Toolkit if it exists.
+if [[ -d "/opt/cuda" ]]; then
+    # note: /usr/local/cuda is a symbolic link to /opt/cuda
+    echo "Removing the existing NVIDIA CUDA Toolkit before installation."
+    sudo rm -fr /usr/local/cuda /opt/cuda /etc/ld.so.conf.d/cuda-*.conf
+    sudo ldconfig
+fi
+
+# Install the NVIDIA CUDA Toolkit.
+echo "Installing the NVIDIA CUDA Toolkit."
+sudo bash "$inst_file" \
+    --toolkit \
+    --installpath=/opt/cuda \
+    --no-man-page \
+    --no-opengl-libs \
+    --no-drm \
+    --override \
+    --silent
+
+status=$?
+
+if [[ "$status" -ne "0" ]]; then
+    echo "ERROR: Failed to install the NVIDIA CUDA Toolkit."
+    exit $status 
+fi
+
+sudo ldconfig
+
+sudo mkdir -p "/etc/environment.d"
+sudo tee "/etc/environment.d/10-nvidia-cuda.conf" >/dev/null <<'EOF'
+CUDA_HOME=/opt/cuda
+EOF
+
+sync
+
+echo && /opt/cuda/bin/nvcc --version
+

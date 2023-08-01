@@ -1,0 +1,368 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2045,SC2059,SC2143
+# shellcheck source=/dev/null
+
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Driver installer script for NVIDIA graphics on Clear Linux OS.
+# Usage: ./install-driver latest|535|525|520|<valid_pathname>
+#
+# NVIDIA Driver Archive
+#   https://download.nvidia.com/XFree86/Linux-x86_64/
+#   https://www.nvidia.com/en-us/drivers/unix/
+#
+# CUDA Redistributable Driver Archive
+#   https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/
+
+kernel=$(uname -r)
+osver=$(source "/etc/os-release"; echo "$VERSION_ID")
+
+# Exit if the "fix-nvidia-libGL-trigger.service" file is missing.
+if [[ ! -f "/etc/systemd/system/fix-nvidia-libGL-trigger.service" ]]; then
+    echo "Please run 'bash pre-install-driver' first."
+    exit 1
+fi
+
+# Exit if dkms or the kernel-source is not installed.
+if [[ ! -x "/usr/bin/dkms" ]]; then
+    echo "The dkms package is not installed, exiting."
+    exit 1
+elif [[ ! -f "/usr/lib/modules/${kernel}/build/Makefile" ]]; then
+    echo "The kernel source is not installed for ${kernel}, exiting."
+    exit 1
+fi
+
+# On first use after OS install, perform check in the event "nomodeset"
+# is passed to the kernel and attempting shortcut by not rebooting.
+# The installer requires a non-graphical environment to run.
+
+contflag=1 state=$(systemctl is-active graphical.target 2>&1)
+
+if [[ "$state" == "active" ]]; then
+    contflag=0
+elif [[ -n $(pidof gnome-shell) || -n $(pidof xdg-desktop-portal) ]]; then
+    contflag=0
+fi
+
+if [[ $contflag -eq 0 ]]; then
+    echo "Run the pre-install-driver script with no arguments."
+    echo "Then, login into multi-user mode to install the driver."
+    exit 1
+fi
+
+###############################################################################
+
+# Parse command-line arguments.
+inst_file=""
+path_regex1="NVIDIA-Linux-x86_64-.*\.run$"
+path_regex2="nvidia_driver-linux-x86_64-.*-archive\.tar\.xz"
+
+case "$1" in
+  latest) echo "Retrieving latest information from the web."
+          in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
+          inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
+          ;;
+     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.86.05/NVIDIA-Linux-x86_64-535.86.05.run" ;;
+     525) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/525.125.06/NVIDIA-Linux-x86_64-525.125.06.run" ;;
+     520) inst_url="https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/nvidia_driver-linux-x86_64-520.61.05-archive.tar.xz" ;;
+
+       *) if [[ "$1" =~ $path_regex1 ]]; then
+              # Installation via a driver run file
+              if [[ ! -f "$1" ]]; then
+                  echo "ERROR: Cannot open '$1' (No such file)"
+                  exit 1
+              fi
+              if [[ "$1" == *"grid"* || "$1" == *"vgpu"* || "$1" == *"kvm"* ]]; then
+                  echo "ERROR: Cannot install '$1' (Not supported)"
+                  exit 1
+              fi
+              inst_file="$1"
+          elif [[ "$1" =~ $path_regex2 ]]; then
+              # Installation via a CUDA redistributable driver file
+              if [[ ! -f "$1" ]]; then
+                  echo "ERROR: Cannot open '$1' (No such file)"
+                  exit 1
+              fi
+              inst_file="$1"
+          else
+              echo "Usage: ${0##*/} latest|535|525|520|<valid_pathname>"
+              exit 1
+          fi
+esac
+
+# Download the driver installer from the web.
+[[ -z ${inst_file} ]] && inst_file="${inst_url##*/}"
+[[ -n ${SUDO_USER} ]] && user=$SUDO_USER || user=$USER
+
+if [[ ! -s "$inst_file" ]]; then
+    inst_file="Downloads/$inst_file"
+    if [[ ! -s "$inst_file" ]]; then
+        if [[ ! -d Downloads && ! -L Downloads ]]; then
+            echo "Creating symbolic link." 
+            if [[ ! -d "/home/${user}/Downloads" ]]; then
+                mkdir -p "/home/${user}/Downloads"
+                chown "$user:$user" "/home/${user}/Downloads"
+                chmod 755 "/home/${user}/Downloads"
+            fi
+            ln -sfv "/home/${user}/Downloads" "Downloads"
+        fi
+        echo "Downloading ${inst_file##*/} from download.nvidia.com ..."
+        curl -O --output-dir "Downloads" "$inst_url"
+        if [[ ! -f "$inst_file" || -n $(grep "404 - Not Found" "$inst_file") ]]; then
+            rm -f "$inst_file"
+            echo "ERROR: ${inst_file##*/} (No such file at download URL)"
+            echo "https://download.nvidia.com/XFree86/Linux-x86_64/"
+            echo "https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/"
+            exit 1
+        fi
+    fi
+fi
+
+###############################################################################
+
+# Test sudo and exit if wrong password or terminated via Ctrl-C.
+sudo id >/dev/null || exit 2
+
+# Create directories.
+sudo mkdir -p /etc/X11
+sudo mkdir -p /opt/nvidia/lib32
+sudo mkdir -p /opt/nvidia/lib64
+sudo mkdir -p /var/lib/dkms
+
+# Allow save to /etc/X11/xorg.conf via NVIDIA settings as the normal user.
+# E.g. Settings > X Server Display Configuration > Save to X Configuration File
+[[ -f /etc/X11/xorg.conf ]] && sudo chown "$user" /etc/X11/xorg.conf
+sudo chown "$user" /etc/X11
+
+# Remove /etc/{egl,glvnd,nvidia}; created from prior repo revisions.
+if [[ -L /usr/share/nvidia ]]; then
+    sudo rm -rf /etc/{egl,glvnd,nvidia} /usr/share/nvidia
+fi
+
+# Remove development libraries {EGL, GLESv1_CM, GLESv2, GL, OpenCL, OpenGL}.
+# They are restored by the fix-nvidia-libGL-trigger service.
+if [[ ${osver} -ge 38270 ]]; then
+    [[ -L /usr/lib64/libOpenCL.so    ]] && sudo rm -f /usr/lib{32,64}/libOpenCL.so
+else
+    [[ -L /usr/lib64/libEGL.so       ]] && sudo rm -f /usr/lib{32,64}/libEGL.so
+    [[ -L /usr/lib64/libGLESv1_CM.so ]] && sudo rm -f /usr/lib{32,64}/libGLESv1_CM.so
+    [[ -L /usr/lib64/libGLESv2.so    ]] && sudo rm -f /usr/lib{32,64}/libGLESv2.so
+    [[ -L /usr/lib64/libGL.so        ]] && sudo rm -f /usr/lib{32,64}/libGL.so
+    [[ -L /usr/lib64/libOpenCL.so    ]] && sudo rm -f /usr/lib{32,64}/libOpenCL.so
+    [[ -L /usr/lib64/libOpenGL.so    ]] && sudo rm -f /usr/lib{32,64}/libOpenGL.so
+fi
+
+# Remove the vulkan producer libs, to be copied after installation.
+sudo rm -f /usr/lib64/libnvidia-vulkan-producer.so.*
+
+# Create a dkms wrapper to include the --force flag.
+# This workaround resolves the dkms false-positives running on Linux kernel 6.x.
+sudo rm -f "/tmp/dkms"
+( echo '#!/bin/bash'
+  echo 'exec /usr/bin/dkms --force "$@"'
+) > "/tmp/dkms"
+chmod 755 "/tmp/dkms"
+
+# Define arguments for the NVIDIA installer script.
+args=""
+args+=" --force-libglx-indirect"
+args+=" --glvnd-egl-config-path=/usr/share/glvnd/egl_vendor.d"
+args+=" --x-prefix=/opt/nvidia"
+args+=" --x-library-path=/opt/nvidia/lib64"
+args+=" --x-sysconfig-path=/etc/X11/xorg.conf.d"
+args+=" --compat32-prefix=/opt/nvidia"
+args+=" --compat32-libdir=lib32"
+args+=" --opengl-prefix=/opt/nvidia"
+args+=" --no-precompiled-interface"
+args+=" --no-distro-scripts"
+args+=" --no-cc-version-check"
+args+=" --no-nouveau-check"
+args+=" --silent"
+args+=" --dkms"
+
+nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
+nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
+
+if [[ "$inst_file" =~ $path_regex1 ]]; then
+    # Installation via a driver run file
+    echo "Installing the NVIDIA proprietary driver..."
+    # shellcheck disable=SC2086
+    sudo bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
+    status=$?
+else
+    # Installation via a CUDA redistributable driver file
+    inst_ver=$(echo "$inst_file" | cut -f4 -d-)
+    echo "Uncompressing CUDA Redistributable Driver for Linux-$(uname -m) ${inst_ver}"
+    mkdir -p "/tmp/nvidia-redist.$$"
+    tar xJf "$inst_file" -C "/tmp/nvidia-redist.$$"
+
+    echo "Installing the NVIDIA proprietary driver..."
+    # shellcheck disable=SC2164
+    cd /tmp/nvidia-redist.$$/*
+
+    # Relocate files to match a run file installation
+    mv CHANGELOG NVIDIA_Changelog
+    mv MANIFEST .manifest
+    mv README README.txt
+    mv bin/* .
+    mv docs html
+    mv etc/* .
+    mv lib/* .
+    mv lib32 32
+    mv man/man1/* .
+    mv sbin/* .
+    mv share/* .
+    mv tests/glvnd libglvnd_install_checker
+    mv tests/glvnd32 32/libglvnd_install_checker
+    mv wine/* .
+    rm -rf bin etc lib man sbin share tests wine
+
+    # Create nvidia-persistenced-init.tar.bz2
+    if [[ -d "src/nvidia-persistenced/init" ]]; then
+        mv src/nvidia-persistenced/init nvidia-persistenced-init
+        tar cjf nvidia-persistenced-init.tar.bz2 nvidia-persistenced-init
+        rm -rf nvidia-persistenced-init src
+    fi
+
+    # Create pkg-history.txt
+    ver=$(./nvidia-installer --version | awk '/version/ { print $NF; exit }')
+    (   printf "Package history for NVIDIA-Linux-x86_64-${ver}-internal:\n\n"
+        printf "NVIDIA-Linux-x86_64-${ver}-internal: Initial package\n\n"
+        printf "NVIDIA-Linux-x86_64-${ver}: Added 32 bit compatibility libraries\n\n"
+        printf "NVIDIA-Linux-x86_64-${ver}: Added Wine files\n\n"
+    ) > pkg-history.txt; unset ver
+
+    # Run the installer
+    # shellcheck disable=SC2086
+    sudo bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
+    status=$?
+
+    # Clean up
+    cd "/tmp" || exit
+    sudo rm -rf "/tmp/nvidia-redist.$$"
+fi
+
+sudo rm -f "/tmp/dkms"
+
+# Terminate here if the NVIDIA installation failed.
+if [[ $status -ne 0 ]]; then
+    echo "ERROR: Failed to the install the NVIDIA proprietary driver."
+    echo "See /var/log/nvidia-installer.log for details."
+    exit $status
+fi
+
+# Configure NVD_BACKEND, system-wide if needed.
+if [[ ${nvver1} -lt 525 ]]; then
+    sudo rm -f "/etc/environment.d/10-nvidia-vaapi-driver.conf"
+else
+    sudo mkdir -p "/etc/environment.d"
+    sudo tee "/etc/environment.d/10-nvidia-vaapi-driver.conf" >/dev/null <<'EOF'
+# The EGL backend (which is still the default) was broken in the 525 driver
+# series, so the direct backend is necessary for decoding to work.
+NVD_BACKEND=direct
+EOF
+fi
+
+# Disable Indirect Branch Tracking.
+# nvidia may not boot on Linux 5.18 (or later) on systems with Intel CPUs.
+# Until this is fixed (530), a workaround (deemed safe) is disabling IBT.
+if [[ ${nvver1} -ge 530 ]] || [[ ${nvver1} -eq 525 && ${nvver2} -ge 105 ]]; then
+    if [[ -e "/etc/kernel/cmdline.d/ibt.conf" ]]; then
+        sudo rm -f "/etc/kernel/cmdline.d/ibt.conf"
+        sudo clr-boot-manager update
+    fi
+else
+    sudo tee "/etc/kernel/cmdline.d/ibt.conf" >/dev/null <<'EOF'
+ibt=off
+EOF
+    sudo clr-boot-manager update
+fi
+
+# Default to "gnome-wayland" for the login session.
+if [[ ${osver} -ge 38270 ]]; then
+    sudo mkdir -p   "/var/lib/AccountsService/users"
+    sudo chown 0700 "/var/lib/AccountsService/users"
+
+    userconf="/var/lib/AccountsService/users/$user"
+    sudo touch "$userconf"
+    lncount=$(sudo wc -l "$userconf")
+
+    if [[ ${lncount% *} -eq 0 ]]; then
+        echo "Default to 'gnome-wayland' for the login session."
+        sudo tee "$userconf" >/dev/null <<"EOF"
+[User]
+Session=gnome-wayland
+SystemAccount=false
+EOF
+    fi
+fi
+
+# Disable the NVIDIA_PRESERVE_VIDEO_MEMORY_ALLOCATIONS check in 61-gdm.rules.
+if [[ -e /usr/lib/udev/rules.d/61-gdm.rules ]]; then
+    sudo mkdir -p /etc/udev/rules.d
+    awk '
+        /NVIDIA_PRESERVE_VIDEO_MEMORY_ALLOCATIONS/ { printf "#%s\n", $0; next } 
+        { print $0 }
+    ' /usr/lib/udev/rules.d/61-gdm.rules \
+    | sudo tee /etc/udev/rules.d/61-gdm.rules >/dev/null
+fi
+
+# Fix missing NVIDIA libraries in /usr/lib64/.
+sudo cp -a /opt/nvidia/lib64/libnvidia-vulkan-producer.so.* /usr/lib64/. 2>/dev/null
+
+if [[ -e /usr/lib64/libnvidia-allocator.so.1 ]]; then
+    if [[ ! -e /usr/lib64/gbm/nvidia-drm_gbm.so ]]; then
+        sudo mkdir -p /usr/lib64/gbm
+        sudo ln -sf /usr/lib64/libnvidia-allocator.so.1 /usr/lib64/gbm/nvidia-drm_gbm.so
+    fi
+fi
+
+sudo ldconfig
+
+###############################################################################
+
+# Update the X11 output class configuration file, making NVIDIA the primary GPU.
+echo "Updating the X11 output class configuration file."
+sudo tee "/etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf" >/dev/null <<'EOF'
+Section "OutputClass"
+    Identifier "nvidia"
+    MatchDriver "nvidia-drm"
+    Driver "nvidia"
+    Option "AllowEmptyInitialConfiguration"
+    Option "PrimaryGPU" "yes" # This can be commented if wanted Intel as primary GPU
+    Option "SLI" "Auto"
+    Option "BaseMosaic" "on"
+EndSection
+
+Section "OutputClass"
+    Identifier "intel"
+    MatchDriver "i915"
+    Driver "modesetting"
+    Option "AccelMethod" "none" # Comment when using Intel as primary
+EndSection
+EOF
+
+# Reload systemd and run the trigger service.
+echo "Running the fix-nvidia-libGL-trigger service."
+sudo systemctl daemon-reload
+sudo systemctl start fix-nvidia-libGL-trigger.service
+
+###############################################################################
+
+# Finish.
+if [[ ${USER} != "root" ]]; then
+    echo "Updating the flatpak user runtime."
+    flatpak update --user -y
+fi
+
+sync
+
+echo ""
+echo "On Optimus-based laptops, edit /etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf"
+echo "and comment two lines 'PrimaryGPU'/'AccelMethod' to use Intel as the primary GPU."
+echo "Remove also /etc/X11/xorg.conf if the file exist."
+echo ""
+echo "Run 'sudo reboot' afterwards."
+echo ""
+

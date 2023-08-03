@@ -11,6 +11,7 @@
 # CUDA Toolkit Archive
 #   https://developer.nvidia.com/cuda-toolkit-archive
 #   https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
+#   https://github.com/NVIDIA/cuda-samples
 
 # The installer requires NVIDIA driver pre-installed.
 if [[ ! -d /proc/driver/nvidia ]]; then
@@ -59,7 +60,7 @@ case "$1" in
           inst_url="https://developer.download.nvidia.com/compute/cuda/${in}"
           ;;
 
-12.2|535) inst_url="https://developer.download.nvidia.com/compute/cuda/12.2.0/local_installers/cuda_12.2.0_535.54.03_linux.run"
+12.2|535) inst_url="https://developer.download.nvidia.com/compute/cuda/12.2.1/local_installers/cuda_12.2.1_535.86.10_linux.run"
           ;;
 
 12.1|530) inst_url="https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda_12.1.1_530.30.02_linux.run"

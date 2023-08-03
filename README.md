@@ -63,7 +63,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
-|  535   |    12.2.0    |
+|  535   |    12.2.1    |
 |  530   |    12.1.1    |
 |  525   |    12.0.1    |
 |  520   |    11.8.0    |
@@ -177,6 +177,7 @@ sudo swupd bundle-add desktop-kde-apps   # optional
 
 * [Announcement; tips and solutions](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499)
 * [CUDA Redistributable Driver Archive](https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/)
+* [CUDA Samples](https://github.com/NVIDIA/cuda-samples)
 * [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 * [NVIDIA Driver Archive](https://download.nvidia.com/XFree86/Linux-x86_64/)
 

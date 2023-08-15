@@ -4,9 +4,9 @@ A **how-to** NVIDIA proprietary driver installation on Clear Linux OS.
 
 ## Preparation
 
-**Starting fresh?** Obtain a recent Clear Linux image, 39710 or newer, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running < 38270 and updating the OS >= 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.
+**Starting fresh?** Obtain a recent Clear Linux image, 39790 or newer, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running CL less than 38270 and updating the OS past 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.
 
-Planning on running the native 6.3 kernel or later? It requires NVIDIA driver 525 minimally, as the older 520 driver modules do not build successfully.
+Planning on running the native 6.3 or later kernel? It requires NVIDIA driver 525 minimally, as the older 520 driver modules do not build successfully.
 
 Planning on running Blender or using a NVIDIA Optimus laptop? The NVIDIA driver 520 is preferred. This requires selecting the "lts kernel" in "Advanced options", during OS installation. If running the 525 or later display driver, another option is choosing the CUDA Toolkit explicitly with `bash install-cuda 11.8`.
 
@@ -39,7 +39,7 @@ Next, run the driver installer script. Running the LTS kernel? Choose any driver
 | Driver |  Version    |
 |--------|-------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 535    | 535.86.05   |
+| 535    | 535.98      |
 | 525    | 525.125.06  |
 | 520    | 520.61.05   |
 

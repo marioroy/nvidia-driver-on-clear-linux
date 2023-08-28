@@ -120,7 +120,7 @@ installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
 add_list=""
 
 for bundle_name in \
-    c-basic devpkg-glu devpkg-libX11 devpkg-libXi devpkg-libXmu \
+    c-basic c-extras-gcc11 devpkg-glu devpkg-libX11 devpkg-libXi devpkg-libXmu \
 ;do
     if [[ ! ${installed_bundles} == *" - ${bundle_name} "* ]]; then
         add_list+=" ${bundle_name}"
@@ -162,7 +162,11 @@ if [[ "$status" -ne "0" ]]; then
     exit $status 
 fi
 
+# Refresh the dynamic linker run-time cache.
 sudo ldconfig
+
+# Set default compiler and CUDA_HOME.
+sudo ln -sf /usr/bin/gcc-11 /opt/cuda/bin/gcc
 
 sudo mkdir -p "/etc/environment.d"
 sudo tee "/etc/environment.d/10-nvidia-cuda.conf" >/dev/null <<'EOF'

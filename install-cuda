@@ -60,7 +60,7 @@ case "$1" in
           inst_url="https://developer.download.nvidia.com/compute/cuda/${in}"
           ;;
 
-12.2|535) inst_url="https://developer.download.nvidia.com/compute/cuda/12.2.1/local_installers/cuda_12.2.1_535.86.10_linux.run"
+12.2|535) inst_url="https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda_12.2.2_535.104.05_linux.run"
           ;;
 
 12.1|530) inst_url="https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda_12.1.1_530.30.02_linux.run"

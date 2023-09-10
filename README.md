@@ -176,8 +176,9 @@ sudo swupd bundle-add desktop-kde-apps   # optional
 ## See also
 
 * [Announcement; tips and solutions](https://community.clearlinux.org/t/the-nvidia-driver-automation-transitions-to-wayland-era/8499)
+* [Driver Archive](https://download.nvidia.com/XFree86/Linux-x86_64/)
 * [CUDA Redistributable Driver Archive](https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/)
-* [CUDA Samples](https://github.com/NVIDIA/cuda-samples)
 * [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
-* [NVIDIA Driver Archive](https://download.nvidia.com/XFree86/Linux-x86_64/)
+* [CUDA Toolkit Documentation](https://docs.nvidia.com/cuda/)
+* [CUDA Toolkit Samples](https://github.com/NVIDIA/cuda-samples)
 

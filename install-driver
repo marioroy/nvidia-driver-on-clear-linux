@@ -187,8 +187,11 @@ nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 if [[ "$inst_file" =~ $path_regex1 ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
+
     # shellcheck disable=SC2086
-    sudo bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
+    sudo IGNORE_PREEMPT_RT_PRESENCE=1 \
+        bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
+
     status=$?
 else
     # Installation via a CUDA redistributable driver file
@@ -235,7 +238,9 @@ else
 
     # Run the installer
     # shellcheck disable=SC2086
-    sudo bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
+    sudo IGNORE_PREEMPT_RT_PRESENCE=1 \
+        bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
+
     status=$?
 
     # Clean up

@@ -39,7 +39,7 @@ Next, run the driver installer script. Running the LTS kernel? Choose any driver
 | Driver |  Version    |
 |--------|-------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 535    | 535.104.05  |
+| 535    | 535.113.01  |
 | 525    | 525.125.06  |
 | 520    | 520.61.05   |
 

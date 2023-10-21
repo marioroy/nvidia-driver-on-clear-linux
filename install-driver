@@ -313,8 +313,14 @@ if [[ -e /usr/lib/udev/rules.d/61-gdm.rules ]]; then
     | sudo tee /etc/udev/rules.d/61-gdm.rules >/dev/null
 fi
 
-# Fix missing NVIDIA libraries in /usr/lib64/.
-sudo cp -a /opt/nvidia/lib64/libnvidia-vulkan-producer.so.* /usr/lib64/. 2>/dev/null
+if [[ ${nvver1} -ge 545 ]]; then
+    # Remove symbolic link left behind. The helper library was removed in 545.23.06,
+    # no longer needed by the Wayland WSI.
+    sudo rm -f /usr/lib64/libnvidia-vulkan-producer.so
+else
+    # Fix missing NVIDIA libraries in /usr/lib64/.
+    sudo cp -a /opt/nvidia/lib64/libnvidia-vulkan-producer.so.* /usr/lib64/. 2>/dev/null
+fi
 
 if [[ -e /usr/lib64/libnvidia-allocator.so.1 ]]; then
     if [[ ! -e /usr/lib64/gbm/nvidia-drm_gbm.so ]]; then

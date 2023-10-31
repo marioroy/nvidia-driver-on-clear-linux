@@ -4,7 +4,7 @@ A **how-to** NVIDIA proprietary driver installation on Clear Linux OS.
 
 ## Preparation
 
-**Starting fresh?** Obtain a recent Clear Linux image, 40250 or newer, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running CL less than 38270 and updating the OS past 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.
+**Starting fresh?** Obtain a recent Clear Linux image, 40260 or newer, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running CL less than 38270 and updating the OS past 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.
 
 Planning on running the native 6.3 or later kernel? It requires NVIDIA driver 525 minimally, as the older 520 driver modules do not build successfully.
 

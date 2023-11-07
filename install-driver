@@ -266,6 +266,10 @@ else
 # The EGL backend (which is still the default) was broken in the 525 driver
 # series, so the direct backend is necessary for decoding to work.
 NVD_BACKEND=direct
+
+# Wayland fix for integrated AMD/Intel GPU with optimus.
+# https://github.com/elFarto/nvidia-vaapi-driver/issues/247
+NVD_GPU=0
 EOF
 fi
 

@@ -69,6 +69,7 @@ fi
 sudo rm -rf /opt/nvidia
 
 sudo rm -f /etc/udev/rules.d/61-gdm.rules
+sudo rm -f /etc/udev/rules.d/70-nvidia.rules
 sudo rm -f /etc/X11/xorg.conf.d/nvidia-drm-outputclass.conf
 sudo rm -f /etc/X11/xorg.conf
 sudo rm -f /usr/lib32/libEGL.so

@@ -25,6 +25,7 @@ sudo mkdir -p /etc/kernel/cmdline-removal.d
 sudo mkdir -p /etc/ld.so.conf.d
 sudo mkdir -p /etc/modprobe.d
 sudo mkdir -p /etc/swupd
+sudo mkdir -p /etc/udev/rules.d
 sudo mkdir -p /etc/X11/xorg.conf.d
 sudo mkdir -p /opt/nvidia/lib32
 sudo mkdir -p /opt/nvidia/lib64
@@ -89,6 +90,7 @@ if [[ "$action" = "update" ]]; then
     sudo rm -f /etc/kernel/cmdline-removal.d/intel-iommu.conf
     sudo rm -f /etc/swupd/config
     sudo rm -f /etc/systemd/system/fix-nvidia-libGL-trigger.service
+    sudo rm -f /etc/udev/rules.d/70-nvidia.rules
     sudo rm -f /etc/X11/xorg.conf.d/nvidia-files-opt.conf
     sudo rm -f /etc/X11/xorg.conf.d/nvidia-modules.conf
 
@@ -115,6 +117,17 @@ if [[ ! -f "/etc/gdm/custom.conf" ]]; then
 [daemon]
 # Uncomment the line below to force the login screen to use Xorg
 #WaylandEnable=false
+GdmXserverTimeout=60
+EOF
+fi
+
+# Add udev rule for the creation of nvidia_uvm related device nodes.
+if [[ ! -f "/etc/udev/rules.d/70-nvidia.rules" ]]; then
+    echo "Adding udev rule for the creation of nvidia_uvm related device nodes."
+    sudo tee "/etc/udev/rules.d/70-nvidia.rules" >/dev/null <<'EOF'
+# CUDA, NVENC, and OpenCL require the nvidia_uvm module and the creation
+# of related device nodes under /dev.
+ACTION=="add", DEVPATH=="/bus/pci/drivers/nvidia", RUN+="/usr/bin/nvidia-modprobe -c 0 -u"
 EOF
 fi
 

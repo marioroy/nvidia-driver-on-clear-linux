@@ -28,6 +28,7 @@ sudo id >/dev/null || exit 2
 
 # Reset configuration.
 echo "Resetting configuration."
+sudo rm -f /etc/modprobe.d/nvidia.conf
 sudo rm -f /etc/modprobe.d/nvidia-uvm.conf
 sudo rm -f /etc/ld.so.conf.d/nvidia.conf
 sudo rm -f /etc/kernel/cmdline.d/blacklist-nouveau.conf

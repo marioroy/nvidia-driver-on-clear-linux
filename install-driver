@@ -312,6 +312,7 @@ if [[ -e /usr/lib/udev/rules.d/61-gdm.rules ]]; then
     sudo mkdir -p /etc/udev/rules.d
     awk '
         /NVIDIA_PRESERVE_VIDEO_MEMORY_ALLOCATIONS/ { printf "#%s\n", $0; next } 
+        /^GOTO="gdm_disable_wayland"/ { printf "GOTO=\"gdm_end\"\n"; next }
         { print $0 }
     ' /usr/lib/udev/rules.d/61-gdm.rules \
     | sudo tee /etc/udev/rules.d/61-gdm.rules >/dev/null

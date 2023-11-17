@@ -79,6 +79,7 @@ fi
 # Update configuration.
 if [[ "$action" = "update" ]]; then
     echo "Resetting configuration."
+    sudo rm -f /etc/modprobe.d/nvidia.conf
     sudo rm -f /etc/modprobe.d/nvidia-uvm.conf
     sudo rm -f /etc/ld.so.conf.d/nvidia.conf
     sudo rm -f /etc/ld.so.conf.d/local.conf
@@ -98,6 +99,21 @@ if [[ "$action" = "update" ]]; then
     sudo rm -f /etc/modprobe.d/disable-nouveau.conf
     sudo rm -f /etc/modprobe.d/nvidia-disable-nouveau.conf
     sudo rm -f /etc/modprobe.d/enable-nvidia-modeset.conf
+fi
+
+# Add parameters for nvidia.
+if [[ ! -f "/etc/modprobe.d/nvidia.conf" ]]; then
+    echo "Adding parameters for the nvidia module."
+    sudo tee "/etc/modprobe.d/nvidia.conf" >/dev/null <<'EOF'
+# Set power-management options.
+options nvidia NVreg_DynamicPowerManagement=2
+options nvidia NVreg_EnableS0ixPowerManagement=1
+options nvidia NVreg_PreserveVideoMemoryAllocations=1
+
+# For Wayland, this must be disabled in the case of Mosaic or SLI.
+# Set to 0 or comment to disable kernel modesetting support.
+options nvidia_drm modeset=1
+EOF
 fi
 
 # Make a soft dependency for nvidia_uvm.

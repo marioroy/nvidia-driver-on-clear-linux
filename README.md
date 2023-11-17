@@ -158,6 +158,12 @@ Note: Skip this section on Optimus-based laptops. Instead, see the prior URL.
 5. Click "Save to X Configuration File" to persist the change
 ```
 
+Add the `UseNvKmsCompositionPipeline` option to the `Screen` section in `/etc/X11/xorg.conf`; to minimize power-consumption on idle when enabling `CompositionPipeline`.
+
+```text
+Option "UseNvKmsCompositionPipeline" "Off"
+```
+
 **Using a HiDPI display?** In GNOME, run `gnome-tweaks` and adjust "Scaling Factor" on the Fonts pane. For Wayland, restore `text-scaling-factor` back to 1.0 and enable an experimental feature `scale-monitor-framebuffer`. Log out for the settings to take effect. Go to GNOME settings > Displays and set the scale accordingly, for the display to 100%, 125%, 150%, ... 400%.
 
 ```bash

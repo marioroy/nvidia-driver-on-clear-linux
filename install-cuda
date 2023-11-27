@@ -93,7 +93,13 @@ if [[ ! -s "$inst_file" ]]; then
     if [[ ! -s "$inst_file" ]]; then
         if [[ ! -d Downloads && ! -L Downloads ]]; then
             echo "Creating symbolic link." 
-            ln -sfv "/home/${user}/Downloads" "Downloads"
+            DownloadPath="$(xdg-user-dir DOWNLOAD)"
+            if [[ ! -d "$DownloadPath" ]]; then
+                mkdir -p "$DownloadPath"
+                chown "$user:$user" "$DownloadPath"
+                chmod 755 "$DownloadPath"
+            fi
+            ln -sfv "$DownloadPath" "Downloads"
         fi
         echo "Downloading ${inst_file##*/} from https://developer.nvidia.com/..."
         curl -O --output-dir "Downloads" "$inst_url"

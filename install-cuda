@@ -93,7 +93,10 @@ if [[ ! -s "$inst_file" ]]; then
     if [[ ! -s "$inst_file" ]]; then
         if [[ ! -d Downloads && ! -L Downloads ]]; then
             echo "Creating symbolic link." 
-            DownloadPath="$(xdg-user-dir DOWNLOAD)"
+            DownloadPath="/home/${user}/Downloads"
+            if [[ -e "/usr/bin/xdg-user-dir" ]]; then
+                DownloadPath="$(xdg-user-dir DOWNLOAD)"
+            fi
             if [[ ! -d "$DownloadPath" ]]; then
                 mkdir -p "$DownloadPath"
                 chown "$user:$user" "$DownloadPath"

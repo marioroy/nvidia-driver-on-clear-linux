@@ -290,7 +290,7 @@ if [[ ! -f "/etc/swupd/config" ]]; then
 # Default list: /usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src
 # Extra entries: for NVIDIA Proprietary Driver and CUDA Toolkit
 
-picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|glvnd|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps|/usr/share/icons/hicolor|/usr/share/fonts.*/\.uuid
+picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|fonts|glvnd|icons|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps
 
 [repair]
 # Options for the "swupd repair" command
@@ -300,7 +300,7 @@ picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nv
 # Default list: /usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src
 # Extra entries: for NVIDIA Proprietary Driver and CUDA Toolkit
 
-picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|glvnd|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps|/usr/share/icons/hicolor|/usr/share/fonts.*/\.uuid
+picky_whitelist=/usr/lib/modules|/usr/lib/kernel|/usr/local|/usr/src|/usr/bin/nvidia-.*|/usr/lib64/dri/(nvdec|nvidia|vdpau)_.*|/usr/lib64/(gbm|nvidia)|/usr/lib64/libnvidia-.*|/usr/lib32/libOpenCL.so|/usr/lib64/libOpenCL.so|/usr/lib64/pkgconfig/(acc|cu|npp|nv|opencl).*|/usr/lib64/xorg/modules/drivers/nvidia_drv\.so|/usr/lib64/xorg/modules/extensions/libglxserver_nvidia.*|/usr/lib/firmware/nvidia/[0-9].*|/usr/lib/libGL\.so\.1|/usr/lib/nvidia|/usr/lib/systemd/system/nvidia-.*|/usr/lib/systemd/system-sleep|/usr/share/(appdata|applications|doc|egl|fonts|glvnd|icons|licenses|man|metainfo|nvidia|xfce4)|/usr/share/gnome-control-center/default-apps
 
 EOF
 fi

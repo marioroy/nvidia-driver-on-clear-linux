@@ -4,11 +4,7 @@ A **how-to** NVIDIA proprietary driver installation on Clear Linux OS.
 
 ## Preparation
 
-**Starting fresh?** Obtain a recent Clear Linux image, 40410 or newer, from the [release archive](https://cdn.download.clearlinux.org/releases/). Currently running CL less than 38270 and updating the OS past 38270? Please refer to the [community article](https://community.clearlinux.org/t/cl-38270-good-news-the-bad-news-and-solution-for-nvidia-graphics/8466) on getting NVIDIA graphics working again.
-
-Planning on running the native 6.3 or later kernel? It requires NVIDIA driver 525 minimally, as the older 520 driver modules do not build successfully.
-
-Planning on running Blender or using a NVIDIA Optimus laptop? The NVIDIA driver 520 is preferred. This requires selecting the "lts kernel" in "Advanced options", during OS installation. If running the 525 or later display driver, another option is choosing the CUDA Toolkit explicitly with `bash install-cuda 11.8`.
+**Starting fresh?** Obtain the current image from the Clear Linux [Downloads](https://www.clearlinux.org/downloads.html) page.
 
 ## Clear Linux OS installation and updates
 
@@ -34,35 +30,43 @@ $ bash ./pre-install-driver update
 $ bash ./pre-install-driver
 ```
 
-Next, run the driver installer script. Running the LTS kernel? Choose any driver in the list. Planning on running the native kernel or GeForce RTX 4000 series? Specify `525` minimally or latest. Or provide the location of the `NVIDIA-Linux-x86_64-*` run-file. Do not forget to run the `check-kernel-dkms` script. That will check each kernel and involve `dkms` to auto-install the NVIDIA modules, if needed.
+Next, run the driver installer script. Choosing latest may not install the lastest driver. Check first before installation. Or specify the desired version or path to the installer file. If unsure, try the 545 driver. Older drivers may not work 100% reliably with recent CL releases (e.g. elginfo crashing).
 
 | Driver |  Version    |
 |--------|-------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
+| 545    | 545.29.06   |
 | 535    | 535.129.03  |
 | 525    | 525.147.05  |
 | 520    | 520.61.05   |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|535|525|520|<valid_pathname>
+Usage: install-driver latest|545|535|525|520|<valid_pathname>
 
-$ bash ./install-driver 525
-$ sudo reboot
+$ bash ./install-driver 545
 ```
 
-Run the check script if you have multiple kernel variants on the system.
+Important: Check top ensuring `dkms` and `systemd` post-trigger-actions have completed processing.
+
+```bash
+$ top
+```
+
+Run the check script if you have multiple kernel variants on the system. That will check each kernel and involve `dkms` to auto-install the NVIDIA modules,
 
 ```bash
 $ bash ./check-kernel-dkms
+$ sudo reboot
 ```
 
 ## NVIDIA CUDA Toolkit installation
 
-Installing the CUDA Toolkit is optional. The "auto" argument is preferred and will install the version suitable for the display driver. If the display driver is not in the table, then the script will fetch the latest CUDA run-file.
+Installing the CUDA Toolkit is optional. The "auto" argument is preferred and will install the version suitable for the display driver. If the display driver is not in the table, then the script will fetch the latest CUDA run-file. If unsure, install the CUDA version matching the display driver or a lower version supported by the application (e.g. Blender).
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
+|  545   |    12.3.1    |
 |  535   |    12.2.2    |
 |  530   |    12.1.1    |
 |  525   |    12.0.1    |
@@ -70,10 +74,10 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 ```bash
 $ bash ./install-cuda help
-Usage: install-cuda auto|latest|12.2|12.1|12.0|11.8|<valid_pathname>
+Usage: install-cuda auto|latest|12.3|12.2|12.1|12.0|11.8|<valid_pathname>
 
 $ bash ./install-cuda auto    # or path to run file
-$ bash ./install-cuda ~/Downloads/cuda_12.0.1_525.85.12_linux.run
+$ bash ./install-cuda ~/Downloads/cuda_12.2.2_535.104.05_linux.run
 ```
 
 Update `~/.profile` so that it can find the `nvcc` command.
@@ -83,9 +87,9 @@ export CUDA_HOME=/opt/cuda
 export PATH=$PATH:$CUDA_HOME/bin
 ```
 
-**Q)** Why specify the auto argument to `install-cuda`?
+**Q)** Why specify the auto argument to `install-cuda` or lower version than the display driver?
 
-**A)** This is the preferred choice. Otherwise, using a mismatched CUDA Toolkit installation not suited for the display driver may cause some CUDA programs to emit an error, "the provided PTX was compiled with an unsupported toolchain".
+**A)** Using a later CUDA Toolkit release than the display driver may cause some CUDA programs to emit an error, "the provided PTX was compiled with an unsupported toolchain".
 
 **Q)** What are my options if the `install-cuda` script is no longer current?
 
@@ -112,11 +116,11 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-525.125.06.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-545.29.06.run
 $ sudo reboot
 ```
 
-Update the CUDA Toolkit, if installed, to install the version suitable for the display driver.
+Update the CUDA Toolkit, if installed, to install the version suitable for the display driver and supported by the application.
 
 ```bash
 [ -d /opt/cuda ] && bash ./install-cuda auto

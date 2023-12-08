@@ -64,7 +64,7 @@ case "$1" in
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
-     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.129.03/NVIDIA-Linux-x86_64-535.129.03.run" ;;
+     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.146.02/NVIDIA-Linux-x86_64-535.146.02.run" ;;
      525) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/525.147.05/NVIDIA-Linux-x86_64-525.147.05.run" ;;
      520) inst_url="https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/nvidia_driver-linux-x86_64-520.61.05-archive.tar.xz" ;;
 

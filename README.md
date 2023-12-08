@@ -36,7 +36,7 @@ Next, run the driver installer script. Choosing latest may not install the laste
 |--------|-------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
 | 545    | 545.29.06   |
-| 535    | 535.129.03  |
+| 535    | 535.146.02  |
 | 525    | 525.147.05  |
 | 520    | 520.61.05   |
 

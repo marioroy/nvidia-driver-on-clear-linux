@@ -138,6 +138,12 @@ $ sudo reboot
 
 ## Troubleshooting
 
+**Eglinfo crashing?** The issue began sometime after CL 40050. A system-wide variable resolves the issue. Create or append to `/etc/environment.d/10-desktop.conf`.
+
+```text
+__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
+```
+
 **Running 6.x kernel?** There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
 
 Installing a kernel manually or have multiple kernels (LTS and native)? Run `check-kernel-dkms` manually. The script installs missing dkms bundles and runs `dkms autoinstall` per each kernel on the system.

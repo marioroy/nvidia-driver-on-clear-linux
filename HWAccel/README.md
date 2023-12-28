@@ -46,10 +46,7 @@ media.navigator.mediadatadecoder_vpx_enabled   true
 Required, for HW acceleration to work using NVIDIA driver 470 (or newer series).
 widget.dmabuf.force-enabled                    true
 
-Required, leave this setting true to use the internal decoders for VP8/VP9.
-media.ffvpx.enabled                            true
-
-Optional, or false if prefer external FFmpeg including LD_LIBRARY_PATH set.
+Recommended, disable to use external FFmpeg including setting LD_LIBRARY_PATH.
 media.ffvpx.enabled                            false
 
 Optional, disables AV1 content; ensure false if graphics lacks support.

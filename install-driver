@@ -60,13 +60,14 @@ fi
 inst_file=""
 path_regex1="NVIDIA-Linux-x86_64-.*\.run$"
 path_regex2="nvidia_driver-linux-x86_64-.*-archive\.tar\.xz"
+path_regex3="vulkan-.*-linux$"
 
 case "$1" in
   latest) echo "Retrieving latest information from the web."
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.download.nvidia.com/assets/gameworks/downloads/secure/Vulkan_Beta_Drivers/NVIDIA-Linux-x86_64-535.43.22.run"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354322-linux"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.146.02/NVIDIA-Linux-x86_64-535.146.02.run" ;;
@@ -85,6 +86,13 @@ case "$1" in
               inst_file="$1"
           elif [[ "$1" =~ $path_regex2 ]]; then
               # Installation via a CUDA redistributable driver file
+              if [[ ! -f "$1" ]]; then
+                  echo "ERROR: Cannot open '$1' (No such file)"
+                  exit 1
+              fi
+              inst_file="$1"
+          elif [[ "$1" =~ $path_regex3 ]]; then
+              # Installation via a Vulkan driver file
               if [[ ! -f "$1" ]]; then
                   echo "ERROR: Cannot open '$1' (No such file)"
                   exit 1
@@ -193,7 +201,7 @@ args+=" --dkms"
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 
-if [[ "$inst_file" =~ $path_regex1 ]]; then
+if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
 

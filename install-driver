@@ -206,7 +206,7 @@ if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
     echo "Installing the NVIDIA proprietary driver..."
 
     # shellcheck disable=SC2086
-    sudo IGNORE_PREEMPT_RT_PRESENCE=1 \
+    sudo CFLAGS="" CXXFLAGS="" IGNORE_PREEMPT_RT_PRESENCE=1 \
         bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
 
     status=$?
@@ -255,7 +255,7 @@ else
 
     # Run the installer
     # shellcheck disable=SC2086
-    sudo IGNORE_PREEMPT_RT_PRESENCE=1 \
+    sudo CFLAGS="" CXXFLAGS="" IGNORE_PREEMPT_RT_PRESENCE=1 \
         bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
 
     status=$?

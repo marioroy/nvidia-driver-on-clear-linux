@@ -197,9 +197,9 @@ sudo swupd bundle-add desktop-kde-apps   # optional
   [Unix Driver Archive](https://www.nvidia.com/en-us/drivers/unix/),
   [Vulkan Driver Support](https://developer.nvidia.com/vulkan-driver)
 
-* [CUDA Redistributable Driver Archive](https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/)
-
 * [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive),
   [Documentation](https://docs.nvidia.com/cuda/),
   [Samples](https://github.com/NVIDIA/cuda-samples)
+
+* [CUDA Redistributable Driver Archive](https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/)
 

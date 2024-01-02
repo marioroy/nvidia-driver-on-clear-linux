@@ -30,7 +30,7 @@ $ bash ./pre-install-driver update
 $ bash ./pre-install-driver
 ```
 
-Next, run the driver installer script. Choosing latest may not install the lastest driver. Check first before installation. Or specify the desired version or path to the installer file. If unsure, try the 545 driver. Older drivers may not work 100% reliably with recent CL releases (e.g. elginfo crashing).
+Next, run the driver installer script. Specifying [latest](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) installs the latest production release. Check first before installation. Or specify the desired version or path to the installer file.
 
 | Driver |  Version    |
 |--------|-------------|
@@ -44,7 +44,7 @@ Next, run the driver installer script. Choosing latest may not install the laste
 $ bash ./install-driver help
 Usage: install-driver latest|vulkan|545|535|525|<valid_pathname>
 
-$ bash ./install-driver 545
+$ bash ./install-driver 535
 ```
 
 Important: Check top ensuring `dkms` and `systemd` post-trigger-actions have completed processing.
@@ -110,7 +110,7 @@ $ bash ./pre-install-driver update
 
 The output will be much smaller for `pre-install-driver` without an argument since it will skip completed sections. Run the pre-installer script regardless to switch the boot target to text mode.
 
-Run `install-driver latest` or acquire the run-file from NVIDIA and save it locally. Note: Choosing [latest](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) may not always be the latest release.
+Run `install-driver latest` or acquire the run-file from NVIDIA and save it locally.
 
 ```bash
 $ bash ./pre-install-driver

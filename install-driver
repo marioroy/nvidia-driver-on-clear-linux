@@ -200,7 +200,22 @@ args+=" --dkms"
 
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
+backport_egl_gbm=0
 
+# Check for broken egl-gbm (<=530/vulkan, 535<=146, 545<=23).
+# https://github.com/NVIDIA/egl-wayland/issues/93
+if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
+    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 146 ]]; then
+    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
+    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    backport_egl_gbm=1
+fi
+
+# Install driver.
 if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
@@ -272,6 +287,13 @@ if [[ $status -ne 0 ]]; then
     echo "ERROR: Failed to the install the NVIDIA proprietary driver."
     echo "See /var/log/nvidia-installer.log for details."
     exit $status
+fi
+
+# Fix broken egl-gbm by backporting libnvidia-egl-gbm from 545.29.06.
+if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/545.29.06" ]]; then
+    echo "Backporting libnvidia-egl-gbm.so* from 545.29.06."
+    sudo cp -af /tmp/545.29.06/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
+    sudo rm -rf /tmp/545.29.06
 fi
 
 # Configure NVD_BACKEND, system-wide if needed.

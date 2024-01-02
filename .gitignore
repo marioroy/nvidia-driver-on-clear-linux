@@ -24,3 +24,5 @@ cuda_*_linux*
 /HWAccel/rpmbuild/SOURCES*
 /HWAccel/rpmbuild/SRPMS*
 
+/egl-gbm-update/545.29.06/
+

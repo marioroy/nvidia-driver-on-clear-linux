@@ -66,7 +66,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
-|  545   |    12.3.1    |
+|  545   |    12.3.2    |
 |  535   |    12.2.2    |
 |  530   |    12.1.1    |
 |  525   |    12.0.1    |

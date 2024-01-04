@@ -413,6 +413,13 @@ sudo systemctl start fix-nvidia-libGL-trigger.service
 
 # Finish.
 if [[ ${USER} != "root" ]]; then
+    # The $user variable is set to $SUDO_USER or $USER above.
+    gpucache_list1=$(find /home/${user}/.config -name GPUCache 2>/dev/null)
+    gpucache_list2=$(find /home/${user}/.local -name GPUCache 2>/dev/null)
+    if [[ -n "$gpucache_list1" || -n "$gpucache_list2" ]]; then
+        echo "Clearing GPUCache for Electron applications."
+        rm -fr $gpucache_list1 $gpucache_list2 2>/dev/null
+    fi
     echo "Updating the flatpak user runtime."
     flatpak update --user -y
 fi

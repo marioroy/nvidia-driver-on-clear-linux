@@ -260,6 +260,12 @@ else
         rm -rf nvidia-persistenced-init src
     fi
 
+    # Check if exist nvidia/rim folder
+    if [[ -d "nvidia/rim" ]]; then
+        mv nvidia/rim/* .
+        rm -fr nvidia
+    fi
+
     # Create pkg-history.txt
     ver=$(./nvidia-installer --version | awk '/version/ { print $NF; exit }')
     (   printf "Package history for NVIDIA-Linux-x86_64-${ver}-internal:\n\n"

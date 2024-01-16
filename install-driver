@@ -70,7 +70,7 @@ case "$1" in
   vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354322-linux"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
-     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.146.02/NVIDIA-Linux-x86_64-535.146.02.run" ;;
+     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.154.05/NVIDIA-Linux-x86_64-535.154.05.run" ;;
      525) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/525.147.05/NVIDIA-Linux-x86_64-525.147.05.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then

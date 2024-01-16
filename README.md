@@ -37,7 +37,7 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
 | vulkan | 535.43.22   |
 | 545    | 545.29.06   |
-| 535    | 535.146.02  |
+| 535    | 535.154.05  |
 | 525    | 525.147.05  |
 
 ```bash

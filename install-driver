@@ -202,12 +202,12 @@ nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 backport_egl_gbm=0
 
-# Check for broken egl-gbm (<=530/vulkan, 535<=146, 545<=23).
+# Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
 # https://github.com/NVIDIA/egl-wayland/issues/93
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
     backport_egl_gbm=1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 146 ]]; then
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then

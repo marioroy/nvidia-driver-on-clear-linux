@@ -106,6 +106,7 @@ if [[ ! -f "/etc/modprobe.d/nvidia.conf" ]]; then
     echo "Adding parameters for the nvidia module."
     sudo tee "/etc/modprobe.d/nvidia.conf" >/dev/null <<'EOF'
 # Set power-management options.
+options nvidia NVreg_UsePageAttributeTable=1
 options nvidia NVreg_DynamicPowerManagement=2
 options nvidia NVreg_EnableS0ixPowerManagement=1
 options nvidia NVreg_PreserveVideoMemoryAllocations=1

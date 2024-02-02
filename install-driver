@@ -67,7 +67,7 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354322-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354324-linux"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.154.05/NVIDIA-Linux-x86_64-535.154.05.run" ;;
@@ -125,7 +125,7 @@ if [[ ! -s "$inst_file" ]]; then
             ln -sfv "$DownloadPath" "Downloads"
         fi
         echo "Downloading ${inst_file##*/} from download.nvidia.com ..."
-        curl -O --output-dir "Downloads" "$inst_url"
+        curl -LO --output-dir "Downloads" "$inst_url"
         if [[ ! -f "$inst_file" || -n $(grep "404 - Not Found" "$inst_file") ]]; then
             rm -f "$inst_file"
             echo "ERROR: ${inst_file##*/} (No such file at download URL)"

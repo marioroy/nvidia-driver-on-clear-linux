@@ -45,18 +45,6 @@ $ bash ./install-driver help
 Usage: install-driver latest|vulkan|545|535|525|<valid_pathname>
 
 $ bash ./install-driver 535
-```
-
-Important: Check top ensuring `dkms` and `systemd` post-trigger-actions have completed processing.
-
-```bash
-$ top
-```
-
-Run the check script if you have multiple kernel variants on the system. That will check each kernel and involve `dkms` to auto-install the NVIDIA modules,
-
-```bash
-$ bash ./check-kernel-dkms
 $ sudo reboot
 ```
 

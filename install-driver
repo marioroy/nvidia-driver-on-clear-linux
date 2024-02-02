@@ -173,14 +173,6 @@ fi
 # Remove the vulkan producer libs, to be copied after installation.
 sudo rm -f /usr/lib64/libnvidia-vulkan-producer.so.*
 
-# Create a dkms wrapper to include the --force flag.
-# This workaround resolves the dkms false-positives running on Linux kernel 6.x.
-sudo rm -f "/tmp/dkms"
-( echo '#!/bin/bash'
-  echo 'exec /usr/bin/dkms --force "$@"'
-) > "/tmp/dkms"
-chmod 755 "/tmp/dkms"
-
 # Define arguments for the NVIDIA installer script.
 args=""
 args+=" --force-libglx-indirect"
@@ -196,22 +188,27 @@ args+=" --no-distro-scripts"
 args+=" --no-cc-version-check"
 args+=" --no-nouveau-check"
 args+=" --silent"
-args+=" --dkms"
+args+=" --no-dkms"
 
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 backport_egl_gbm=0
 
+sudo cp check-kernel-dkms /tmp/.
+
 # Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
 # https://github.com/NVIDIA/egl-wayland/issues/93
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
+    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
     backport_egl_gbm=1
 fi
 
@@ -286,14 +283,18 @@ else
     sudo rm -rf "/tmp/nvidia-redist.$$"
 fi
 
-sudo rm -f "/tmp/dkms"
-
 # Terminate here if the NVIDIA installation failed.
 if [[ $status -ne 0 ]]; then
     echo "ERROR: Failed to the install the NVIDIA proprietary driver."
     echo "See /var/log/nvidia-installer.log for details."
     exit $status
+else
+    echo "The NVIDIA driver installation succeeded."
+    echo
 fi
+
+module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
+dkms_module=${module_dir//-/\/}
 
 # Fix broken egl-gbm by backporting libnvidia-egl-gbm from 545.29.06.
 if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/545.29.06" ]]; then
@@ -301,6 +302,26 @@ if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/545.29.06" ]]; then
     sudo cp -af /tmp/545.29.06/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
     sudo rm -rf /tmp/545.29.06
 fi
+
+# Fix GPL-incompatible module nvidia.ko uses GPL-only symbol __rcu_read_[un]lock.
+(
+    if [[ -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
+        echo "Applying nvidia-gpl-pfn_valid.patch to /usr/src/${module_dir}"
+        cd "/usr/src/${module_dir}"
+        sudo patch -p2 < "/tmp/nvidia-gpl-pfn_valid.patch"
+        sudo rm -f "/tmp/nvidia-gpl-pfn_valid.patch"
+        echo
+    fi
+)
+
+# Register DKMS module.
+echo "Registering the NVIDIA kernel module sources with DKMS."
+sudo dkms add ${dkms_module}
+
+# Build kernel modules.
+echo "Building the NVIDIA kernel modules."
+sudo "/tmp/check-kernel-dkms" || exit $?
+sudo rm -f "/tmp/check-kernel-dkms"
 
 # Configure NVD_BACKEND, system-wide if needed.
 if [[ ${nvver1} -lt 525 ]]; then

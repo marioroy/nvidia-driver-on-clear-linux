@@ -10,17 +10,7 @@
 
 if [[ ${1} = "help" ]]; then
     echo "usage: check-kernel-dkms"
-    exit 1
-fi
-
-if [[ ! -x "/usr/bin/dkms" ]]; then
-    echo "The dkms package is not installed, exiting."
-    exit 1
-fi
-
-if [[ ! -d "/var/lib/dkms/nvidia" ]]; then
-    echo "NVIDIA driver not installed with --dkms option, exiting."
-    exit 1
+    exit 0
 fi
 
 ###############################################################################
@@ -65,6 +55,11 @@ if [[ -n "$add_list" ]]; then
 fi
 
 ###############################################################################
+
+if [[ ! -x "/usr/bin/dkms" ]]; then
+    echo "The dkms package is not installed, exiting."
+    exit 1
+fi
 
 # Double-check all kernels on the system.
 for variant in $(ls -1 "/usr/lib/modules"); do

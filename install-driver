@@ -67,7 +67,7 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354324-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354325-linux"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.154.05/NVIDIA-Linux-x86_64-535.154.05.run" ;;
@@ -194,7 +194,7 @@ nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 backport_egl_gbm=0
 
-sudo cp check-kernel-dkms /tmp/.
+sudo cp "check-kernel-dkms" /tmp/.
 
 # Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
 # https://github.com/NVIDIA/egl-wayland/issues/93

@@ -1,34 +1,20 @@
 # hardware-acceleration-using-nvidia-graphics
 
-## Install the "codecs-cuda" bundle from Clear Fraction
+## NVIDIA backend VA-API driver installation
 
-[Clear Fraction](https://clearfraction.cf) introduced the `codecs-cuda` bundle in August 2022. It provides ffmpeg and gstreamer-libav with dependencies, supporting AMD (vaapi, vdpau), Intel (qsv, vaapi), and NVIDIA (nvdec, vaapi, vdpau). It also includes the (nvdec, vdpau) backend vaapi drivers. Note: The vdpau backend VA-API driver no longer works since Chrome 110.
-
-First, check as one cannot have both `codecs` and `codecs-cuda` installed. Then, proceed with the installation.
+The build script installs minimum dependencies, builds, and installs the driver to `/usr/lib64/dri/`. Run the build and clean scripts as a normal user.
 
 ```bash
-# First time? Add the Clear Fraction repository.
-sudo swupd 3rd-party add clearfraction https://download.clearfraction.cf/update
+cd HWAccel
+bash ./build-all  # Builds and installs the NVIDIA VA-API driver.
+bash ./clean-all
 
-# Check and remove the codecs bundle if installed.
-sudo swupd 3rd-party bundle-list | grep codecs
-sudo swupd 3rd-party bundle-remove codecs
-
-# Install the codecs-cuda bundle.
-sudo swupd 3rd-party bundle-add codecs-cuda
-```
-
-Next, run the `pre-install-driver` script. The `update` argument refreshes various configuration files without switching the boot target mode and includes making symbolic links in `/usr/lib64/dri` for the (nvdec, vdpau) backend VA-API drivers.
-
-```bash
-cd nvidia-driver-on-clear-linux
-git pull   # important
-bash ./pre-install-driver update
+# rpmbuild/RPMS   # Folder preserved, clean manually if desired.
 ```
 
 ## Firefox configuration and settings
 
-Copy the configuration file to your home directory. For NVIDIA graphics, hardware acceleration is handled by the NVDEC VA driver, supporting AV1, VP9, and h264.
+Copy the configuration file to your home directory. For NVIDIA graphics, hardware acceleration is handled by the NVIDIA VA-API driver, supporting AV1, VP9 and h264.
 
 ```bash
 cp firefox/firefox.conf ~/.config/.
@@ -46,10 +32,7 @@ media.navigator.mediadatadecoder_vpx_enabled   true
 Required, for HW acceleration to work using NVIDIA driver 470 (or newer series).
 widget.dmabuf.force-enabled                    true
 
-Recommended, disable to use external FFmpeg including setting LD_LIBRARY_PATH.
-media.ffvpx.enabled                            false
-
-Optional, disables AV1 content; ensure false if graphics lacks support.
+Optional, disables AV1 content; ensure false if your GPU lacks AV1 support.
 media.av1.enabled                              false
 
 ---

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Extract package list; insert leading comma to each line.
+[[ -f /usr/bin/rpm ]] || exit 0
+
+osver=$(source "/etc/os-release"; echo "$VERSION_ID")
+installed_pkgs=$(rpm -qa | sed 's/^/,/g')
+remove_list=""
+
+for pkg_name in \
+    elfutils-bin meson-bin meson-python3 ninja-bin pkg-config-bin \
+    elfutils-dev glib-dev gst-plugins-bad-dev gstreamer-dev libdrm-dev \
+    libffi-dev libva-dev libX11-dev mesa-dev pcre2-dev wayland-dev \
+    xz-dev zlib-dev zstd-dev \
+;do
+    if [[ "${installed_pkgs}" == *",${pkg_name}-"* ]]; then
+        remove_list="${remove_list} ${pkg_name}"
+    fi
+done
+
+if [[ ${osver} -ge 38270 ]]; then
+    pkg_name=libglvnd-dev
+    if [[ "${installed_pkgs}" == *",${pkg_name}-"* ]]; then
+        remove_list="${remove_list} ${pkg_name}"
+    fi
+fi
+
+# Remove packages.
+echo "Auto-removing RPM packages, added earlier..."
+
+if [[ -n ${remove_list} ]]; then
+    remove_list=${remove_list## } # remove leading whitespace
+    echo "rpm -e ${remove_list}"
+    # shellcheck disable=SC2086
+    sudo rpm -e ${remove_list} 2>&1 | grep -v "remove failed: No such file or directory"
+    if [[ -f /etc/systemd/system/fix-nvidia-libGL-trigger.service ]]; then
+        echo "Running the fix-nvidia-libGL-trigger service..."
+        sudo systemctl daemon-reload
+        sudo systemctl start fix-nvidia-libGL-trigger.service
+    fi
+    sudo ldconfig
+fi
+

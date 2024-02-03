@@ -1,0 +1,22 @@
+#!/bin/bash
+# Running Fedora? The ../build-all script installs the nv-codec-headers package.
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 0
+
+mkdir -p "SOURCES"
+
+( rpmbuild --quiet -bb \
+    SPECS/nv-codec-headers.spec --define "_topdir $PWD" \
+    --define "_sourcedir $PWD/SOURCES" --undefine=_disable_source_fetch \
+    --define "abi_package %{nil}" || { echo "Build failed"; kill $$; }
+) 2>&1 | grep -Ev '^((chmod|find):.* No such file or directory|warning: Empty %files)'
+
+rm -f RPMS/x86_64/*debuginfo*.rpm
+rm -f RPMS/x86_64/*debugsource*.rpm
+
+# shellcheck disable=SC2012
+rpmfile=$(ls -1t RPMS/x86_64/nv-codec-headers-*.rpm | head -1)
+
+sudo rpm -Uvh --nodeps --force "$rpmfile"
+

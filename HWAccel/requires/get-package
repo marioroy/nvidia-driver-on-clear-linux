@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Fetch package from the Clear Linux repository.
+pkg=$1
+
+if [[ -z "$pkg" ]]; then
+    echo "Usage: ${0##*/} name"
+    exit 1
+fi
+
+osver=$(source "/etc/os-release"; echo "$VERSION_ID")
+[[ -s "pkg.list" ]] && filever=$(head -1 "pkg.list") || filever=0
+
+if [[ "$osver" != "$filever" ]]; then
+    echo "Updating package list..."
+    echo "$osver" > pkg.list
+    url="https://cdn.download.clearlinux.org/releases/${osver}/clear/x86_64/os/Packages/"
+    curl -sL "$url" | awk -F\" '/a href=/ { if ($2 == "../") next; print $2 }' >> pkg.list
+fi
+
+file=$(grep "^${pkg}-" "pkg.list" | head -1)
+
+if [[ -z "$file" ]]; then
+    echo "$pkg: No such name in pkg.list"
+    exit 1
+fi
+
+mkdir -p "PKGS"
+
+ver=$(head -1 "pkg.list")
+url="https://cdn.download.clearlinux.org/releases/${ver}/clear/x86_64/os/Packages/"
+
+echo -n "$file: "
+
+if [[ ! -f "PKGS/$file" ]]; then
+    rm -f "PKGS/$pkg"-[0-9]*.rpm # remove older version, if exists
+    curl --output-dir "PKGS" -sLO "${url}/${file}"
+fi
+
+echo "fetched"
+

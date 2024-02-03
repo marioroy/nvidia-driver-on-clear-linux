@@ -1,0 +1,18 @@
+#!/bin/bash
+
+mkdir -p "SOURCES"
+
+( rpmbuild --quiet -bb \
+    SPECS/nvidia-vaapi-driver.spec --define "_topdir $PWD" \
+    --define "_sourcedir $PWD/SOURCES" --undefine=_disable_source_fetch \
+    --define "abi_package %{nil}" || { echo "Build failed"; kill $$; }
+) 2>&1 | grep -Ev '^((chmod|find):.* No such file or directory|warning: Empty %files)'
+
+rm -f RPMS/x86_64/*debuginfo*.rpm
+rm -f RPMS/x86_64/*debugsource*.rpm
+
+# shellcheck disable=SC2012
+rpmfile=$(ls -1t RPMS/x86_64/nvidia-vaapi-driver-*.rpm | head -1)
+
+sudo rpm -Uvh --nodeps --force "$rpmfile"
+

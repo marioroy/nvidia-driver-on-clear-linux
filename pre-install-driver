@@ -395,28 +395,6 @@ fi
 
 ###############################################################################
 
-# Clear Fraction provides the 'codecs-cuda' bundle, since August 15, 2022.
-# Create symbolic links in /usr/lib64/dri/, if needed, for nvdec_drv_video.so,
-# vdpau_drv_video.so, and nvidia_drv_video.so.
-
-if [[ -d "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri" ]]; then
-    cfdir=/opt/3rd-party/bundles/clearfraction/usr/lib64/dri
-    pushd "/usr/lib64/dri" >/dev/null
-    if [[ ! -e "nvdec_drv_video.so" && -e "$cfdir/nvdec_drv_video.so" ]]; then
-        echo "Creating symbolic link for 'nvdec_drv_video.so' in /usr/lib64/dri/."
-        sudo ln -sfv "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri/nvdec_drv_video.so" .
-    fi
-    if [[ ! -e "vdpau_drv_video.so" && -e "$cfdir/vdpau_drv_video.so" ]]; then
-        echo "Creating symbolic link for 'vdpau_drv_video.so' in /usr/lib64/dri/."
-        sudo ln -sfv "/opt/3rd-party/bundles/clearfraction/usr/lib64/dri/vdpau_drv_video.so" .
-    fi
-    if [[ ! -L "nvidia_drv_video.so" && -e "nvdec_drv_video.so" ]]; then
-        echo "Creating symbolic link for 'nvidia_drv_video.so' in /usr/lib64/dri/."
-        sudo ln -sfv "nvdec_drv_video.so" "nvidia_drv_video.so"
-    fi
-    popd >/dev/null
-fi
-
 sync
 
 # Finish.

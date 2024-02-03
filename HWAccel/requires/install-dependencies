@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# shellcheck source=/dev/null
+[[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
+
+# Extract installed bundles; append trailing comma to each line.
+osver=$(source "/etc/os-release"; echo "$VERSION_ID")
+installed_bundles=$(sudo swupd bundle-list | grep '^ -' | sed 's/$/,/g')
+add_list=""; count=0
+
+for bundle_name in \
+    curl c-basic make nasm package-utils perl-basic unzip wget \
+;do
+    if [[ ! "${installed_bundles}" == *"- ${bundle_name},"* ]]; then
+        add_list+=" ${bundle_name}"
+        count=$(( count + 1 ))
+    fi
+done
+
+# Add the perl-extras bundle, only if Scalar::Util is missing.
+if ! perl -MScalar::Util -e 1 2>/dev/null; then
+    add_list+=" perl-extras"
+    count=$(( count + 1 ))
+fi
+
+# Add the transcoding-support bundle, only if running desktop.
+if [[ "${installed_bundles}" == *"- gstreamer,"* ]]; then
+    if [[ ! "${installed_bundles}" == *"- transcoding-support,"* ]]; then
+        add_list+=" transcoding-support"
+        count=$(( count + 1 ))
+    fi
+fi
+
+# Install bundles.
+echo "Auto-installing bundles..."
+
+if [[ -n "$add_list" ]]; then
+    add_list=${add_list## } # remove leading whitespace
+    echo "swupd bundle-add $add_list"
+    # shellcheck disable=SC2086
+    sudo swupd bundle-add $add_list
+    sudo ldconfig
+    echo ""
+fi
+
+# The following will work running the desktop or server image.
+# Most packages are already installed in the desktop image.
+# Basically, just fetch+install the missing packages.
+
+# Install packages.
+echo "Auto-installing packages..."
+
+function get_pkg {
+    pkg=$1; file=$2
+    if [[ ! -e ${file} ]]; then
+        ./get-package "${pkg}"
+        sudo rpm -Uvh --nodeps "PKGS/${pkg}"-*.rpm
+        count=$(( count + 1 ))
+    fi
+}
+
+ get_pkg meson-bin /usr/bin/meson
+ get_pkg meson-python3 /usr/lib/python3.*/site-packages/mesonbuild/__init__.py
+ get_pkg ninja-bin /usr/bin/ninja
+ get_pkg pkg-config-bin /usr/bin/pkg-config
+
+ get_pkg elfutils-bin /usr/bin/eu-strip
+ get_pkg elfutils-dev /usr/lib64/pkgconfig/libelf.pc
+ get_pkg pcre2-dev /usr/lib64/pkgconfig/libpcre2-8.pc
+ get_pkg pcre2-lib /usr/lib64/libpcre2-8.so.*
+ get_pkg xz-dev /usr/lib64/pkgconfig/liblzma.pc
+ get_pkg xz-lib /usr/lib64/liblzma.so.*
+ get_pkg zlib-dev /usr/lib64/pkgconfig/zlib.pc
+ get_pkg zlib-lib /usr/lib64/libz.so.*
+ get_pkg zstd-dev /usr/lib64/pkgconfig/libzstd.pc
+ get_pkg zstd-lib /usr/lib64/libzstd.so.*
+
+ get_pkg glib-dev /usr/include/glib-*/glib.h
+ get_pkg gstreamer-dev /usr/lib64/pkgconfig/gstreamer-1.0.pc
+ get_pkg gstreamer-lib /usr/lib64/libgstreamer-1.0.so.*
+ get_pkg gst-plugins-bad-dev /usr/lib64/pkgconfig/gstreamer-codecparsers-1.0.pc
+ get_pkg gst-plugins-bad-lib /usr/lib64/libgstcodecparsers-1.0.so.*
+ get_pkg libdrm-dev /usr/lib64/libdrm.so
+ get_pkg libdrm-lib /usr/lib64/libdrm.so.*
+ get_pkg libffi-dev /usr/lib64/pkgconfig/libffi.pc
+ get_pkg libffi-lib /usr/lib64/libffi.so.*
+ get_pkg libva-dev /usr/lib64/pkgconfig/libva.pc
+ get_pkg libva-lib /usr/lib64/libva.so.*
+#get_pkg libX11-dev /usr/lib64/pkgconfig/x11.pc
+ get_pkg libX11-lib /usr/lib64/libX11.so.*
+#get_pkg mesa-dev /usr/lib64/pkgconfig/gbm.pc
+ get_pkg mesa-lib /usr/lib64/libgbm.so.*
+#get_pkg wayland-dev /usr/lib64/pkgconfig/wayland-egl.pc
+ get_pkg wayland-lib /usr/lib64/libwayland-egl.so.*
+
+if [[ ${osver} -ge 38270 ]]; then
+    get_pkg libglvnd-dev /usr/lib64/pkgconfig/libglvnd.pc
+    get_pkg libglvnd-lib /usr/lib64/libGLdispatch.so.*
+fi
+
+if [[ ${count} -gt 0 ]]; then
+    if [[ -f /etc/systemd/system/fix-nvidia-libGL-trigger.service ]]; then
+        echo "Running the fix-nvidia-libGL-trigger service..."
+        sudo systemctl daemon-reload
+        sudo systemctl start fix-nvidia-libGL-trigger.service
+    fi
+    sudo ldconfig
+fi
+

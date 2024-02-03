@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# shellcheck disable=SC2164
+# shellcheck source=/dev/null
+
+OS=$(source "/etc/os-release" 2>/dev/null; echo "$ID"); [[ -z "$OS" ]] && exit 1
+
+if [[ ! -d "requires" || ! -d "rpmbuild" ]]; then
+    echo "Run script from the HWAccel dir."
+    echo "bash build-all"
+    exit 1
+fi
+
+# Test sudo, exit if wrong password or terminated.
+sudo true >/dev/null || exit 2
+
+if [[ "$OS" == "clear-linux-os" ]]; then
+    # Clear Linux OS
+    pushd requires >/dev/null
+    ./install-dependencies && echo "" || exit $?
+    popd >/dev/null
+elif [[ "$OS" == "fedora" ]]; then
+    # Tested on Fedora 37
+    add_list="" installed_pkgs=$(rpm -qa | awk '{ print "", $0 }')
+    for pkg_name in \
+        gstreamer1-plugins-bad-free-devel nv-codec-headers \
+        libdrm-devel libva-devel libva-utils \
+        autoconf automake libtool meson \
+    ;do
+        if [[ ! "${installed_pkgs}" == *" ${pkg_name}-"* ]]; then
+            add_list+=" $pkg_name"
+        fi
+    done
+    if [[ -n "$add_list" ]]; then
+        # shellcheck disable=SC2086
+        sudo dnf -y install ${add_list} || exit $?
+    fi
+fi
+
+if [[ "$OS" == "clear-linux-os" || "$OS" == "fedora" ]]; then
+    pushd rpmbuild >/dev/null
+    for script in [0-9][0-9]-* ; do
+        echo "Running ${script}..."
+        ./"$script" && echo "" || exit $?
+    done
+    popd >/dev/null
+fi
+
+if [[ "$OS" == "clear-linux-os" ]]; then
+    pushd requires >/dev/null
+    ./"uninstall-packages" && echo "" || exit $?
+    popd >/dev/null
+fi
+

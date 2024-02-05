@@ -210,6 +210,10 @@ elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
     sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
     sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
     backport_egl_gbm=1
+elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
+    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
+    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
 fi
 
 # Install driver.

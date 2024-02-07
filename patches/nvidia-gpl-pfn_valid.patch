@@ -44,7 +44,7 @@ pfn_valid implementation. However 5.15 and older branches are
 --- a/kernel/nvidia/nv-mmap.c
 +++ b/kernel/nvidia/nv-mmap.c
 @@ -576,3 +576,3 @@
-             if (!IS_REG_OFFSET(nv, access_start, access_len) &&
+                 !IS_REG_OFFSET(nv, access_start, access_len) &&
 -                (pfn_valid(PFN_DOWN(mmap_start))))
 +                (nv_pfn_valid(PFN_DOWN(mmap_start))))
              {

@@ -192,6 +192,7 @@ args+=" --no-dkms"
 
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
+apply_gpl_pfn_valid_patch=0
 backport_egl_gbm=0
 
 sudo cp "check-kernel-dkms" /tmp/.
@@ -199,22 +200,27 @@ sudo cp "check-kernel-dkms" /tmp/.
 # Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
 # https://github.com/NVIDIA/egl-wayland/issues/93
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
-    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
-    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
-    backport_egl_gbm=1
+    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
 elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
-    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
-    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
-    backport_egl_gbm=1
+    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
-    sudo tar xf egl-gbm-update/545.29.06.tgz -C /tmp
-    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
-    backport_egl_gbm=1
+    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
-    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
+    apply_gpl_pfn_valid_patch=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
-    sudo cp patches/nvidia-gpl-pfn_valid.patch /tmp/.
+    apply_gpl_pfn_valid_patch=1
 fi
+
+if [[ ${apply_gpl_pfn_valid_patch} -eq 1 ]]; then
+    sudo cp "patches/nvidia-gpl-pfn_valid.patch" /tmp/.
+fi
+if [[ ${backport_egl_gbm} -eq 1 ]]; then
+    sudo tar xf "egl-gbm-update/545.29.06.tgz" -C /tmp
+fi
+
+# Remove all /usr/src/nvidia-* folders.
+# This is necessary in case of prior gpl_pfn_valid patching.
+sudo rm -fr /usr/src/nvidia-[0-9]*[0-9]
 
 # Install driver.
 if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
@@ -309,7 +315,7 @@ fi
 
 # Fix GPL-incompatible module nvidia.ko uses GPL-only symbol __rcu_read_[un]lock.
 (
-    if [[ -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
+    if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
         echo "Applying nvidia-gpl-pfn_valid.patch to /usr/src/${module_dir}"
         cd "/usr/src/${module_dir}"
         sudo patch -p2 < "/tmp/nvidia-gpl-pfn_valid.patch"

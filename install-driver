@@ -192,25 +192,37 @@ args+=" --no-dkms"
 
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
+
+apply_drm_hotplug_patch=0
 apply_gpl_pfn_valid_patch=0
 backport_egl_gbm=0
-
-sudo cp "check-kernel-dkms" /tmp/.
 
 # Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
 # https://github.com/NVIDIA/egl-wayland/issues/93
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
-    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
+    apply_drm_hotplug_patch=1
+    apply_gpl_pfn_valid_patch=1
+    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
-    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
+    apply_drm_hotplug_patch=1
+    apply_gpl_pfn_valid_patch=1
+    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
-    apply_gpl_pfn_valid_patch=1; backport_egl_gbm=1
+    apply_drm_hotplug_patch=1
+    apply_gpl_pfn_valid_patch=1
+    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
+    apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
     apply_gpl_pfn_valid_patch=1
 fi
 
+sudo cp "check-kernel-dkms" /tmp/.
+
+if [[ ${apply_drm_hotplug_patch} -eq 1 ]]; then
+    sudo cp "patches/nvidia-drm-hotplug.patch" /tmp/.
+fi
 if [[ ${apply_gpl_pfn_valid_patch} -eq 1 ]]; then
     sudo cp "patches/nvidia-gpl-pfn_valid.patch" /tmp/.
 fi
@@ -311,6 +323,7 @@ if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/545.29.06" ]]; then
     echo "Backporting libnvidia-egl-gbm.so* from 545.29.06."
     sudo cp -af /tmp/545.29.06/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
     sudo rm -rf /tmp/545.29.06
+    echo
 fi
 
 # Fix GPL-incompatible module nvidia.ko uses GPL-only symbol __rcu_read_[un]lock.
@@ -320,6 +333,17 @@ fi
         cd "/usr/src/${module_dir}"
         sudo patch -p2 < "/tmp/nvidia-gpl-pfn_valid.patch"
         sudo rm -f "/tmp/nvidia-gpl-pfn_valid.patch"
+        echo
+    fi
+)
+
+# Patch nvidia-drm to use a workqueue to defer calling drm_kms_helper_hotplug_event.
+(
+    if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-drm-hotplug.patch" ]]; then
+        echo "Applying nvidia-drm-hotplug.patch to /usr/src/${module_dir}"
+        cd "/usr/src/${module_dir}"
+        sudo patch -p1 < "/tmp/nvidia-drm-hotplug.patch"
+        sudo rm -f "/tmp/nvidia-drm-hotplug.patch"
         echo
     fi
 )

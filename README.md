@@ -126,19 +126,13 @@ $ sudo reboot
 
 ## Troubleshooting
 
-**Eglinfo crashing?** The issue began sometime after CL 40050. A system-wide variable resolves the issue. Create or append to `/etc/environment.d/10-desktop.conf`.
-
-```text
-__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
-```
-
-**Running 6.x kernel?** There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
-
-Installing a kernel manually or have multiple kernels (LTS and native)? Run `check-kernel-dkms` manually. The script installs missing dkms bundles and runs `dkms autoinstall` per each kernel on the system.
+**Installing a kernel manually?** The `check-kernel-dkms` script installs missing dkms bundles and runs `dkms autoinstall` per each kernel on the system.
 
 ```bash
 bash ./check-kernel-dkms
 ```
+
+**Running 6.x kernel?** There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
 
 **Running a NVIDIA Optimus laptop?** See `CONFIGURATION STEPS` or search for `dbus` in `/usr/share/doc/NVIDIA_GLX-1.0/README.txt`. Undo the steps if `nvidia-powerd` reports no matching GPU found. Refer to: [Failure with the nvidia-powerd service](https://www.reddit.com/r/Fedora/comments/sobsgb/anyone_experiencing_failure_with_nvidiapowerd/) and [Video decode does not work after exiting sleep](https://github.com/elFarto/nvidia-vaapi-driver/issues/42).
 

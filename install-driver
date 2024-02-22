@@ -67,7 +67,7 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354325-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354328-linux"
           ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.154.05/NVIDIA-Linux-x86_64-535.154.05.run" ;;
@@ -232,7 +232,8 @@ fi
 
 # Remove all /usr/src/nvidia-* folders and /var/lib/dkms/nvidia/VERSION.
 # This is necessary in case of prior gpl_pfn_valid patching.
-sudo rm -fr /usr/src/nvidia-[0-9]*[0-9] /var/lib/dkms/nvidia/[0-9]*[0-9]
+sudo rm -fr /usr/src/nvidia-[0-9]*[0-9]
+sudo rm -fr /var/lib/dkms/nvidia/[0-9]*[0-9]
 
 # Install driver.
 if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
@@ -331,7 +332,7 @@ fi
     if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
         echo "Applying nvidia-gpl-pfn_valid.patch to /usr/src/${module_dir}"
         cd "/usr/src/${module_dir}"
-        sudo patch -p2 < "/tmp/nvidia-gpl-pfn_valid.patch"
+        sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-gpl-pfn_valid.patch"
         sudo rm -f "/tmp/nvidia-gpl-pfn_valid.patch"
         echo
     fi
@@ -342,7 +343,7 @@ fi
     if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-drm-hotplug.patch" ]]; then
         echo "Applying nvidia-drm-hotplug.patch to /usr/src/${module_dir}"
         cd "/usr/src/${module_dir}"
-        sudo patch -p1 < "/tmp/nvidia-drm-hotplug.patch"
+        sudo patch -Np1 --no-backup-if-mismatch -i "/tmp/nvidia-drm-hotplug.patch"
         sudo rm -f "/tmp/nvidia-drm-hotplug.patch"
         echo
     fi

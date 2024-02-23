@@ -134,6 +134,12 @@ bash ./check-kernel-dkms
 
 **Running 6.x kernel?** There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
 
+**Running Wayland and x11 apps are crashing?** See [issue](https://gitlab.freedesktop.org/mesa/mesa/-/issues/10624). Try setting a system-wide variable and reboot.
+
+```text
+__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
+```
+
 **Running a NVIDIA Optimus laptop?** See `CONFIGURATION STEPS` or search for `dbus` in `/usr/share/doc/NVIDIA_GLX-1.0/README.txt`. Undo the steps if `nvidia-powerd` reports no matching GPU found. Refer to: [Failure with the nvidia-powerd service](https://www.reddit.com/r/Fedora/comments/sobsgb/anyone_experiencing_failure_with_nvidiapowerd/) and [Video decode does not work after exiting sleep](https://github.com/elFarto/nvidia-vaapi-driver/issues/42).
 
 See also: [Integrated GPU is not (fully) used / Responsiveness issue](https://community.clearlinux.org/t/integrated-gpu-is-not-fully-used-responsiveness-issue/8608).

@@ -195,6 +195,7 @@ nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 
 apply_drm_hotplug_patch=0
 apply_gpl_pfn_valid_patch=0
+apply_gcc14_update=0
 backport_egl_gbm=0
 
 # Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
@@ -202,20 +203,25 @@ backport_egl_gbm=0
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
 fi
 
 sudo cp "check-kernel-dkms" /tmp/.
@@ -225,6 +231,9 @@ if [[ ${apply_drm_hotplug_patch} -eq 1 ]]; then
 fi
 if [[ ${apply_gpl_pfn_valid_patch} -eq 1 ]]; then
     sudo cp "patches/nvidia-gpl-pfn_valid.patch" /tmp/.
+fi
+if [[ ${apply_gcc14_update} -eq 1 ]]; then
+    sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
 fi
 if [[ ${backport_egl_gbm} -eq 1 ]]; then
     sudo tar xf "egl-gbm-update/545.29.06.tgz" -C /tmp
@@ -334,6 +343,17 @@ fi
         cd "/usr/src/${module_dir}"
         sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-gpl-pfn_valid.patch"
         sudo rm -f "/tmp/nvidia-gpl-pfn_valid.patch"
+        echo
+    fi
+)
+
+# Apply GCC14 support to conftest.sh.
+(
+    if [[ ${apply_gcc14_update} -eq 1 && -f "/tmp/nvidia-drivers-gcc14.patch" ]]; then
+        echo "Applying nvidia-drivers-gcc14.patch to /usr/src/${module_dir}"
+        cd "/usr/src/${module_dir}"
+        sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-drivers-gcc14.patch"
+        sudo rm -f "/tmp/nvidia-drivers-gcc14.patch"
         echo
     fi
 )

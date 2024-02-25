@@ -210,6 +210,10 @@ elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
     apply_gpl_pfn_valid_patch=1
     apply_gcc14_update=1
     backport_egl_gbm=1
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 161 ]]; then
+    apply_drm_hotplug_patch=1
+    apply_gcc14_update=1
+    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
@@ -219,8 +223,12 @@ elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
     apply_gcc14_update=1
+    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
     apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 54 ]]; then
     apply_gcc14_update=1
 fi
 
@@ -236,7 +244,7 @@ if [[ ${apply_gcc14_update} -eq 1 ]]; then
     sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
 fi
 if [[ ${backport_egl_gbm} -eq 1 ]]; then
-    sudo tar xf "egl-gbm-update/545.29.06.tgz" -C /tmp
+    sudo tar xf "egl-gbm-update/550.54.14.tgz" -C /tmp
 fi
 
 # Remove all /usr/src/nvidia-* folders and /var/lib/dkms/nvidia/VERSION.
@@ -328,11 +336,11 @@ fi
 module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
 dkms_module=${module_dir//-/\/}
 
-# Fix broken egl-gbm by backporting libnvidia-egl-gbm from 545.29.06.
-if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/545.29.06" ]]; then
-    echo "Backporting libnvidia-egl-gbm.so* from 545.29.06."
-    sudo cp -af /tmp/545.29.06/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
-    sudo rm -rf /tmp/545.29.06
+# Fix broken egl-gbm by backporting libnvidia-egl-gbm from 550.54.14.
+if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/550.54.14" ]]; then
+    echo "Backporting libnvidia-egl-gbm.so* from 550.54.14."
+    sudo cp -af /tmp/550.54.14/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
+    sudo rm -rf /tmp/550.54.14
     echo
 fi
 
@@ -360,7 +368,7 @@ fi
 
 # Patch nvidia-drm to use a workqueue to defer calling drm_kms_helper_hotplug_event.
 (
-    if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-drm-hotplug.patch" ]]; then
+    if [[ ${apply_drm_hotplug_patch} -eq 1 && -f "/tmp/nvidia-drm-hotplug.patch" ]]; then
         echo "Applying nvidia-drm-hotplug.patch to /usr/src/${module_dir}"
         cd "/usr/src/${module_dir}"
         sudo patch -Np1 --no-backup-if-mismatch -i "/tmp/nvidia-drm-hotplug.patch"

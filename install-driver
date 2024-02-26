@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|vulkan|545|535|525|<valid_pathname>
+# Usage: ./install-driver latest|vulkan|550|545|535|525|<valid_pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -69,8 +69,9 @@ case "$1" in
           ;;
   vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354328-linux"
           ;;
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.54.14/NVIDIA-Linux-x86_64-550.54.14.run" ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
-     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.154.05/NVIDIA-Linux-x86_64-535.154.05.run" ;;
+     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.161.07/NVIDIA-Linux-x86_64-535.161.07.run" ;;
      525) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/525.147.05/NVIDIA-Linux-x86_64-525.147.05.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then
@@ -99,7 +100,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|vulkan|545|535|525|<valid_pathname>"
+              echo "Usage: ${0##*/} latest|vulkan|550|545|535|525|<valid_pathname>"
               exit 1
           fi
 esac
@@ -198,8 +199,6 @@ apply_gpl_pfn_valid_patch=0
 apply_gcc14_update=0
 backport_egl_gbm=0
 
-# Check for broken egl-gbm (<=530/vulkan, 535<=154, 545<=23).
-# https://github.com/NVIDIA/egl-wayland/issues/93
 if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
@@ -336,7 +335,7 @@ fi
 module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
 dkms_module=${module_dir//-/\/}
 
-# Fix broken egl-gbm by backporting libnvidia-egl-gbm from 550.54.14.
+# Update egl-gbm by backporting libnvidia-egl-gbm from 550.54.14.
 if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/550.54.14" ]]; then
     echo "Backporting libnvidia-egl-gbm.so* from 550.54.14."
     sudo cp -af /tmp/550.54.14/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.

@@ -60,14 +60,14 @@ fi
 inst_file=""
 path_regex1="NVIDIA-Linux-x86_64-.*\.run$"
 path_regex2="nvidia_driver-linux-x86_64-.*-archive\.tar\.xz"
-path_regex3="vulkan-.*-linux$"
+path_vulkan="vulkan-.*-linux$"
 
 case "$1" in
   latest) echo "Retrieving latest information from the web."
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5354328-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504055-linux"
           ;;
      550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.54.14/NVIDIA-Linux-x86_64-550.54.14.run" ;;
      545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
@@ -92,7 +92,7 @@ case "$1" in
                   exit 1
               fi
               inst_file="$1"
-          elif [[ "$1" =~ $path_regex3 ]]; then
+          elif [[ "$1" =~ $path_vulkan ]]; then
               # Installation via a Vulkan driver file
               if [[ ! -f "$1" ]]; then
                   echo "ERROR: Cannot open '$1' (No such file)"
@@ -199,7 +199,10 @@ apply_gpl_pfn_valid_patch=0
 apply_gcc14_update=0
 backport_egl_gbm=0
 
-if [[ ${nvver1} -le 530 || "$inst_file" =~ $path_regex3 ]]; then
+if [[ "$inst_file" =~ $path_vulkan ]]; then
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -le 530 ]]; then
     apply_drm_hotplug_patch=1
     apply_gpl_pfn_valid_patch=1
     apply_gcc14_update=1
@@ -252,7 +255,7 @@ sudo rm -fr /usr/src/nvidia-[0-9]*[0-9]
 sudo rm -fr /var/lib/dkms/nvidia/[0-9]*[0-9]
 
 # Install driver.
-if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_regex3 ]]; then
+if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_vulkan ]]; then
     # Installation via a driver run file
     echo "Installing the NVIDIA proprietary driver..."
 

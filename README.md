@@ -36,14 +36,12 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 |--------|-------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
 | vulkan | 550.40.55   |
-| 550    | 550.54.14   |
-| 545    | 545.29.06   |
+| 550    | 550.67      |
 | 535    | 535.161.07  |
-| 525    | 525.147.05  |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|vulkan|550|545|535|525|<valid_pathname>
+Usage: install-driver latest|vulkan|550|535|<valid_pathname>
 
 $ bash ./install-driver 535
 $ sudo reboot
@@ -106,7 +104,7 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.54.14.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.67.run
 $ sudo reboot
 ```
 
@@ -133,8 +131,6 @@ $ sudo reboot
 ```bash
 bash ./check-kernel-dkms
 ```
-
-**Running 6.x kernel?** There's an [issue](https://forums.developer.nvidia.com/t/objtool-naked-return-found-in-rethunk-build-when-build-dkms-525-53-in-kernel-6-0-x-gcc12-2-0/234403) installing the NVIDIA driver while running the `native` kernel. Ignore the errors in `/var/log/nvidia-installer.log` if the installation succeeds. Otherwise, you will need to run the `lts` kernel before installation.
 
 **Running Wayland and x11 apps are crashing?** See [issue](https://gitlab.freedesktop.org/mesa/mesa/-/issues/10624). Try setting a system-wide variable and reboot.
 

@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|vulkan|550|545|535|525|<valid_pathname>
+# Usage: ./install-driver latest|vulkan|550|535|<valid_pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -69,10 +69,8 @@ case "$1" in
           ;;
   vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504055-linux"
           ;;
-     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.54.14/NVIDIA-Linux-x86_64-550.54.14.run" ;;
-     545) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/545.29.06/NVIDIA-Linux-x86_64-545.29.06.run" ;;
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.67/NVIDIA-Linux-x86_64-550.67.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.161.07/NVIDIA-Linux-x86_64-535.161.07.run" ;;
-     525) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/525.147.05/NVIDIA-Linux-x86_64-525.147.05.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
@@ -100,7 +98,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|vulkan|550|545|535|525|<valid_pathname>"
+              echo "Usage: ${0##*/} latest|vulkan|550|535|<valid_pathname>"
               exit 1
           fi
 esac
@@ -135,6 +133,37 @@ if [[ ! -s "$inst_file" ]]; then
             exit 1
         fi
     fi
+fi
+
+nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
+nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
+
+apply_drm_hotplug_patch=0
+apply_gpl_pfn_valid_patch=0
+apply_gcc14_update=0
+backport_egl_gbm=0
+
+if [[ "$inst_file" =~ $path_vulkan ]]; then
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -le 530 || ${nvver1} -eq 545 ]]; then
+    echo "ERROR: The ${nvver1} release is unsupported. Try 535, 550, or later release."
+    exit 1
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
+    apply_drm_hotplug_patch=1
+    apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 161 ]]; then
+    apply_drm_hotplug_patch=1
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
+    apply_gpl_pfn_valid_patch=1
+    apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 54 ]]; then
+    apply_gcc14_update=1
 fi
 
 ###############################################################################
@@ -191,49 +220,6 @@ args+=" --no-nouveau-check"
 args+=" --silent"
 args+=" --no-dkms"
 
-nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
-nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
-
-apply_drm_hotplug_patch=0
-apply_gpl_pfn_valid_patch=0
-apply_gcc14_update=0
-backport_egl_gbm=0
-
-if [[ "$inst_file" =~ $path_vulkan ]]; then
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -le 530 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 161 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 545 && ${nvver2} -le 23 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 545 && ${nvver2} -le 29 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 550 && ${nvver2} -le 54 ]]; then
-    apply_gcc14_update=1
-fi
-
 sudo cp "check-kernel-dkms" /tmp/.
 
 if [[ ${apply_drm_hotplug_patch} -eq 1 ]]; then
@@ -246,7 +232,7 @@ if [[ ${apply_gcc14_update} -eq 1 ]]; then
     sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
 fi
 if [[ ${backport_egl_gbm} -eq 1 ]]; then
-    sudo tar xf "egl-gbm-update/550.54.14.tgz" -C /tmp
+    sudo tar xf "egl-gbm-update/550.67.tgz" -C /tmp
 fi
 
 # Remove all /usr/src/nvidia-* folders and /var/lib/dkms/nvidia/VERSION.
@@ -338,11 +324,11 @@ fi
 module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
 dkms_module=${module_dir//-/\/}
 
-# Update egl-gbm by backporting libnvidia-egl-gbm from 550.54.14.
-if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/550.54.14" ]]; then
-    echo "Backporting libnvidia-egl-gbm.so* from 550.54.14."
-    sudo cp -af /tmp/550.54.14/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
-    sudo rm -rf /tmp/550.54.14
+# Update egl-gbm by backporting libnvidia-egl-gbm from 550.67.
+if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/550.67" ]]; then
+    echo "Backporting libnvidia-egl-gbm.so* from 550.67."
+    sudo cp -af /tmp/550.67/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
+    sudo rm -rf /tmp/550.67
     echo
 fi
 
@@ -388,12 +374,9 @@ echo "Building the NVIDIA kernel modules."
 sudo "/tmp/check-kernel-dkms" || exit $?
 sudo rm -f "/tmp/check-kernel-dkms"
 
-# Configure NVD_BACKEND, system-wide if needed.
-if [[ ${nvver1} -lt 525 ]]; then
-    sudo rm -f "/etc/environment.d/10-nvidia-vaapi-driver.conf"
-else
-    sudo mkdir -p "/etc/environment.d"
-    sudo tee "/etc/environment.d/10-nvidia-vaapi-driver.conf" >/dev/null <<'EOF'
+# Configure NVD_BACKEND, system-wide.
+sudo mkdir -p "/etc/environment.d"
+sudo tee "/etc/environment.d/10-nvidia-vaapi-driver.conf" >/dev/null <<'EOF'
 # The EGL backend (which is still the default) was broken in the 525 driver
 # series, so the direct backend is necessary for decoding to work.
 NVD_BACKEND=direct
@@ -402,22 +385,6 @@ NVD_BACKEND=direct
 # https://github.com/elFarto/nvidia-vaapi-driver/issues/247
 NVD_GPU=0
 EOF
-fi
-
-# Disable Indirect Branch Tracking.
-# nvidia may not boot on Linux 5.18 (or later) on systems with Intel CPUs.
-# Until this is fixed (530), a workaround (deemed safe) is disabling IBT.
-if [[ ${nvver1} -ge 530 ]] || [[ ${nvver1} -eq 525 && ${nvver2} -ge 105 ]]; then
-    if [[ -e "/etc/kernel/cmdline.d/ibt.conf" ]]; then
-        sudo rm -f "/etc/kernel/cmdline.d/ibt.conf"
-        sudo clr-boot-manager update
-    fi
-else
-    sudo tee "/etc/kernel/cmdline.d/ibt.conf" >/dev/null <<'EOF'
-ibt=off
-EOF
-    sudo clr-boot-manager update
-fi
 
 # Default to "gnome-wayland" for the login session.
 if [[ ${osver} -ge 38270 ]]; then

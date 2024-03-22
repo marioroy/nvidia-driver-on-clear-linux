@@ -70,7 +70,7 @@ case "$1" in
   vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504055-linux"
           ;;
      550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.67/NVIDIA-Linux-x86_64-550.67.run" ;;
-     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.161.07/NVIDIA-Linux-x86_64-535.161.07.run" ;;
+     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.171.04/NVIDIA-Linux-x86_64-535.171.04.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
@@ -157,6 +157,9 @@ elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
 elif [[ ${nvver1} -eq 535 && ${nvver2} -le 161 ]]; then
     apply_drm_hotplug_patch=1
     apply_gcc14_update=1
+    backport_egl_gbm=1
+elif [[ ${nvver1} -eq 535 && ${nvver2} -le 171 ]]; then
+    apply_drm_hotplug_patch=1
     backport_egl_gbm=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
     apply_gpl_pfn_valid_patch=1

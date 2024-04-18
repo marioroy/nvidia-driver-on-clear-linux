@@ -67,9 +67,9 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504055-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504059-linux"
           ;;
-     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.67/NVIDIA-Linux-x86_64-550.67.run" ;;
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.76/NVIDIA-Linux-x86_64-550.76.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.171.04/NVIDIA-Linux-x86_64-535.171.04.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then
@@ -144,7 +144,6 @@ apply_gcc14_update=0
 backport_egl_gbm=0
 
 if [[ "$inst_file" =~ $path_vulkan ]]; then
-    apply_gcc14_update=1
     backport_egl_gbm=1
 elif [[ ${nvver1} -le 530 || ${nvver1} -eq 545 ]]; then
     echo "ERROR: The ${nvver1} release is unsupported. Try 535, 550, or later release."

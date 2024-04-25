@@ -67,9 +67,9 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504059-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504061-linux"
           ;;
-     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.76/NVIDIA-Linux-x86_64-550.76.run" ;;
+     550) inst_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run" ;;
      535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.171.04/NVIDIA-Linux-x86_64-535.171.04.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then

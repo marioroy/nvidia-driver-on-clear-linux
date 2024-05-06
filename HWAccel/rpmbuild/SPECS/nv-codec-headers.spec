@@ -1,6 +1,6 @@
 Name:           nv-codec-headers
-Version:        12.1.14.0
-Release:        2
+Version:        12.2.72.0
+Release:        3
 Summary:        FFmpeg version of Nvidia Codec SDK headers
 License:        MIT
 URL:            https://github.com/FFmpeg/nv-codec-headers
@@ -12,7 +12,7 @@ Source:         %url/archive/n%{version}/%{name}-n%{version}.tar.gz
 FFmpeg version of headers required to interface with Nvidias codec APIs.
 
 %prep
-%autosetup -n %{name}-n%{version}
+%setup -q -n %{name}-n%{version}
 sed -i -e 's@/include@/include/ffnvcodec@g' ffnvcodec.pc.in
 
 # Extract license

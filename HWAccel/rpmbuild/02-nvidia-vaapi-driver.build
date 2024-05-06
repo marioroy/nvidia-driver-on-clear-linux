@@ -2,11 +2,17 @@
 
 mkdir -p "SOURCES"
 
-( rpmbuild --quiet -bb \
-    SPECS/nvidia-vaapi-driver.spec --define "_topdir $PWD" \
-    --define "_sourcedir $PWD/SOURCES" --undefine=_disable_source_fetch \
-    --define "abi_package %{nil}" || { echo "Build failed"; kill $$; }
-) 2>&1 | grep -Ev '^((chmod|find):.* No such file or directory|warning: Empty %files)'
+( rpmbuild --quiet -bb SPECS/nvidia-vaapi-driver.spec \
+    --define "abi_package %{nil}" \
+    --define "debug_package %{nil}" \
+    --define "_buildhost $(hostname)" \
+    --define "_topdir $PWD" \
+    --define "_sourcedir $PWD/SOURCES" \
+    --define "_source_payload w6T0.zstdio" \
+    --define "_binary_payload w6T0.zstdio" \
+    --undefine=_disable_source_fetch \
+  || { echo "Build failed"; kill $$; }
+) 2>&1 | grep -Ev '^((chmod|find|ls):.* No such file or directory|warning: Empty %files)'
 
 rm -f RPMS/x86_64/*debuginfo*.rpm
 rm -f RPMS/x86_64/*debugsource*.rpm

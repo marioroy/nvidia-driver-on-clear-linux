@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|vulkan|550|535|<valid_pathname>
+# Usage: ./install-driver latest|vulkan|550|<valid_pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -70,7 +70,6 @@ case "$1" in
   vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504061-linux"
           ;;
      550) inst_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run" ;;
-     535) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/535.171.04/NVIDIA-Linux-x86_64-535.171.04.run" ;;
 
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
@@ -98,7 +97,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|vulkan|550|535|<valid_pathname>"
+              echo "Usage: ${0##*/} latest|vulkan|550|<valid_pathname>"
               exit 1
           fi
 esac
@@ -138,32 +137,17 @@ fi
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
 
-apply_drm_hotplug_patch=0
 apply_gpl_pfn_valid_patch=0
 apply_gcc14_update=0
-backport_egl_gbm=0
 
 if [[ "$inst_file" =~ $path_vulkan ]]; then
-    backport_egl_gbm=1
-elif [[ ${nvver1} -le 530 || ${nvver1} -eq 545 ]]; then
-    echo "ERROR: The ${nvver1} release is unsupported. Try 535, 550, or later release."
+    ;
+elif [[ ${nvver1} -le 545 ]]; then
+    echo "ERROR: The ${nvver1} release is unsupported. Try 550 or later release."
     exit 1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 154 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 161 ]]; then
-    apply_drm_hotplug_patch=1
-    apply_gcc14_update=1
-    backport_egl_gbm=1
-elif [[ ${nvver1} -eq 535 && ${nvver2} -le 171 ]]; then
-    apply_drm_hotplug_patch=1
-    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
     apply_gpl_pfn_valid_patch=1
     apply_gcc14_update=1
-    backport_egl_gbm=1
 elif [[ ${nvver1} -eq 550 && ${nvver2} -le 54 ]]; then
     apply_gcc14_update=1
 fi
@@ -224,17 +208,11 @@ args+=" --no-dkms"
 
 sudo cp "check-kernel-dkms" /tmp/.
 
-if [[ ${apply_drm_hotplug_patch} -eq 1 ]]; then
-    sudo cp "patches/nvidia-drm-hotplug.patch" /tmp/.
-fi
 if [[ ${apply_gpl_pfn_valid_patch} -eq 1 ]]; then
     sudo cp "patches/nvidia-gpl-pfn_valid.patch" /tmp/.
 fi
 if [[ ${apply_gcc14_update} -eq 1 ]]; then
     sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
-fi
-if [[ ${backport_egl_gbm} -eq 1 ]]; then
-    sudo tar xf "egl-gbm-update/550.67.tgz" -C /tmp
 fi
 
 # Remove all /usr/src/nvidia-* folders and /var/lib/dkms/nvidia/VERSION.
@@ -326,14 +304,6 @@ fi
 module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
 dkms_module=${module_dir//-/\/}
 
-# Update egl-gbm by backporting libnvidia-egl-gbm from 550.67.
-if [[ ${backport_egl_gbm} -eq 1 && -d "/tmp/550.67" ]]; then
-    echo "Backporting libnvidia-egl-gbm.so* from 550.67."
-    sudo cp -af /tmp/550.67/libnvidia-egl-gbm.so* /opt/nvidia/lib64/.
-    sudo rm -rf /tmp/550.67
-    echo
-fi
-
 # Fix GPL-incompatible module nvidia.ko uses GPL-only symbol __rcu_read_[un]lock.
 (
     if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
@@ -352,17 +322,6 @@ fi
         cd "/usr/src/${module_dir}"
         sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-drivers-gcc14.patch"
         sudo rm -f "/tmp/nvidia-drivers-gcc14.patch"
-        echo
-    fi
-)
-
-# Patch nvidia-drm to use a workqueue to defer calling drm_kms_helper_hotplug_event.
-(
-    if [[ ${apply_drm_hotplug_patch} -eq 1 && -f "/tmp/nvidia-drm-hotplug.patch" ]]; then
-        echo "Applying nvidia-drm-hotplug.patch to /usr/src/${module_dir}"
-        cd "/usr/src/${module_dir}"
-        sudo patch -Np1 --no-backup-if-mismatch -i "/tmp/nvidia-drm-hotplug.patch"
-        sudo rm -f "/tmp/nvidia-drm-hotplug.patch"
         echo
     fi
 )

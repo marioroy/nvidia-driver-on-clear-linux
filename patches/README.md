@@ -1,20 +1,6 @@
 
 February 14, 2024
 
-## Use a workqueue to defer calling `drm_kms_helper_hotplug_event`
-
-Fix backported from 550.40.07.
-
-"We can't just call `drm_kms_helper_hotplug_event` directly because
-`fbdev_generic` may attempt to set a mode from inside the hotplug event
-handler. Because kapi event handling runs on `nvkms_kthread_q`, this blocks
-other event processing including the flip completion notifier expected by
-`nv_drm_atomic_commit`."
-
-"Defer hotplug event handling to a work item so that `nvkms_kthread_q` can
-continue processing events while a DRM modeset is in progress."
-
-
 ## ERROR: modpost: GPL-incompatible module nvidia.ko uses GPL-only symbol `__rcu_read_lock`
 
 "linux-6.1.76, 6.6.15 and 6.7.3 have modified the non-ARCH-specific

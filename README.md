@@ -37,11 +37,10 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
 | vulkan | 550.40.61   |
 | 550    | 550.78      |
-| 535    | 535.171.04  |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|vulkan|550|535|<valid_pathname>
+Usage: install-driver latest|vulkan|550|<valid_pathname>
 
 $ bash ./install-driver 550
 $ sudo reboot

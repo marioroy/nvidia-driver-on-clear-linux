@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|vulkan|550|<valid_pathname>
+# Usage: ./install-driver latest|550|555|vulkan|<valid_pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -67,10 +67,12 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504061-linux"
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.90.07/NVIDIA-Linux-x86_64-550.90.07.run"
           ;;
-     550) inst_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run" ;;
-
+     555) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/555.42.02/NVIDIA-Linux-x86_64-555.42.02.run"
+          ;;
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504063-linux"
+          ;;
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
               if [[ ! -f "$1" ]]; then
@@ -97,7 +99,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|vulkan|550|<valid_pathname>"
+              echo "Usage: ${0##*/} latest|550|555|vulkan|<valid_pathname>"
               exit 1
           fi
 esac
@@ -141,7 +143,7 @@ apply_gpl_pfn_valid_patch=0
 apply_gcc14_update=0
 
 if [[ "$inst_file" =~ $path_vulkan ]]; then
-    ;
+    true
 elif [[ ${nvver1} -le 545 ]]; then
     echo "ERROR: The ${nvver1} release is unsupported. Try 550 or later release."
     exit 1

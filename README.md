@@ -32,15 +32,16 @@ $ bash ./pre-install-driver
 
 Next, run the driver installer script. Specifying [latest](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) installs the latest production release. Check first before installation. Or specify the desired version or path to the installer file.
 
-| Driver |  Version    |
-|--------|-------------|
+| Driver |    Version     |
+|--------|----------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| vulkan | 550.40.61   |
-| 550    | 550.78      |
+| 550    | 550.90.07      |
+| 555    | 555.42.02 Beta |
+| vulkan | 550.40.63 Beta |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|vulkan|550|<valid_pathname>
+Usage: install-driver latest|550|555|vulkan|<valid_pathname>
 
 $ bash ./install-driver 550
 $ sudo reboot
@@ -52,6 +53,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
+|  555   |    12.5.0    |
 |  550   |    12.4.1    |
 |  545   |    12.3.2    |
 |  535   |    12.2.2    |
@@ -61,7 +63,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 ```bash
 $ bash ./install-cuda help
-Usage: install-cuda auto|latest|12.4|12.3|12.2|12.1|12.0|11.8|<valid_pathname>
+Usage: install-cuda auto|latest|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<valid_pathname>
 
 $ bash ./install-cuda auto    # or path to run file
 $ bash ./install-cuda ~/Downloads/cuda_12.2.2_535.104.05_linux.run
@@ -103,7 +105,7 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.78.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.90.07.run
 $ sudo reboot
 ```
 

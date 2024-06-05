@@ -36,12 +36,12 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 |--------|----------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
 | 550    | 550.90.07      |
-| 555    | 555.42.02 Beta |
+| 555    | 555.52.04 Beta |
 | vulkan | 550.40.63 Beta |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|550|555|vulkan|<valid_pathname>
+Usage: install-driver latest|550|555|vulkan|<pathname>
 
 $ bash ./install-driver 550
 $ sudo reboot
@@ -63,7 +63,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 ```bash
 $ bash ./install-cuda help
-Usage: install-cuda auto|latest|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<valid_pathname>
+Usage: install-cuda auto|latest|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<pathname>
 
 $ bash ./install-cuda auto    # or path to run file
 $ bash ./install-cuda ~/Downloads/cuda_12.2.2_535.104.05_linux.run

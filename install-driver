@@ -143,7 +143,7 @@ apply_gpl_pfn_valid_patch=0
 apply_gcc14_update=0
 
 if [[ "$inst_file" =~ $path_vulkan ]]; then
-    true
+    true  # pass - The path vulkan regex is checked first.
 elif [[ ${nvver1} -le 545 ]]; then
     echo "ERROR: The ${nvver1} release is unsupported. Try 550 or later release."
     exit 1

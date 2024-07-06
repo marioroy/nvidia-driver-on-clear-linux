@@ -32,12 +32,12 @@ $ bash ./pre-install-driver
 
 Next, run the driver installer script. Specifying [latest](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) installs the latest production release. Check first before installation. Or specify the desired version or path to the installer file.
 
-| Driver |    Version     |
-|--------|----------------|
+| Driver |    Version                   |
+|--------|------------------------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 550    | 550.90.07      |
-| 555    | 555.52.04 Beta |
-| vulkan | 550.40.63 Beta |
+| 550    | 550.90.07                    |
+| 555    | 555.58.02 New Feature Branch |
+| vulkan | 550.40.65 Beta               |
 
 ```bash
 $ bash ./install-driver help

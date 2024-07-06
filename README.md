@@ -35,7 +35,7 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | Driver |    Version                   |
 |--------|------------------------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 550    | 550.90.07                    |
+| 550    | 550.90.07 NVIDIA Recommended |
 | 555    | 555.58.02 New Feature Branch |
 | vulkan | 550.40.65 Beta               |
 

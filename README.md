@@ -35,7 +35,7 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | Driver |    Version                   |
 |--------|------------------------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 550    | 550.90.07 NVIDIA Recommended |
+| 550    | 550.100 NVIDIA Recommended |
 | 555    | 555.58.02 New Feature Branch |
 | vulkan | 550.40.65 Beta               |
 
@@ -53,7 +53,7 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
-|  555   |    12.5.0    |
+|  555   |    12.5.1    |
 |  550   |    12.4.1    |
 |  545   |    12.3.2    |
 |  535   |    12.2.2    |
@@ -66,7 +66,7 @@ $ bash ./install-cuda help
 Usage: install-cuda auto|latest|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<pathname>
 
 $ bash ./install-cuda auto    # or path to run file
-$ bash ./install-cuda ~/Downloads/cuda_12.2.2_535.104.05_linux.run
+$ bash ./install-cuda ~/Downloads/cuda_12.4.1_550.54.15_linux.run
 ```
 
 Update `~/.profile` so that it can find the `nvcc` command.
@@ -105,7 +105,7 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.90.07.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.100.run
 $ sudo reboot
 ```
 

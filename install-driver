@@ -67,7 +67,7 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.100/NVIDIA-Linux-x86_64-550.100.run"
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.107.02/NVIDIA-Linux-x86_64-550.107.02.run"
           ;;
      555) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/555.58.02/NVIDIA-Linux-x86_64-555.58.02.run"
           ;;

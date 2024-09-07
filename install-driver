@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|550|555|vulkan|<pathname>
+# Usage: ./install-driver latest|550|560|vulkan|<pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -69,9 +69,9 @@ case "$1" in
           ;;
      550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.107.02/NVIDIA-Linux-x86_64-550.107.02.run"
           ;;
-     555) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/555.58.02/NVIDIA-Linux-x86_64-555.58.02.run"
+     560) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/560.35.03/NVIDIA-Linux-x86_64-560.35.03.run"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504065-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504071-linux"
           ;;
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
@@ -99,7 +99,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|550|555|vulkan|<pathname>"
+              echo "Usage: ${0##*/} latest|550|560|vulkan|<pathname>"
               exit 1
           fi
 esac

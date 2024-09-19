@@ -35,7 +35,7 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | Driver |    Version                    |
 |--------|-------------------------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 550    | 550.107.02 NVIDIA Recommended |
+| 550    | 550.120 NVIDIA Recommended    |
 | 560    | 560.35.03 New Feature Branch  |
 | vulkan | 550.40.71 Beta                |
 
@@ -106,7 +106,7 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.107.02.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.120.run
 $ sudo reboot
 ```
 

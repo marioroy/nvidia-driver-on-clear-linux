@@ -62,6 +62,9 @@ if [[ ! -x "/usr/bin/dkms" ]]; then
 fi
 
 # Double-check all kernels on the system.
+sudo rm -f /var/lib/dkms/nvidia/kernel-*
+sudo rm -f /lib/modules/*/updates/dkms/nvidia*.ko
+
 for variant in $(ls -1 "/usr/lib/modules"); do
     if [[ -f "/usr/lib/modules/${variant}/modules.dep" ]]; then
         echo "Checking dkms modules in ${variant}."

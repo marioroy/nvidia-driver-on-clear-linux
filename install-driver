@@ -222,7 +222,6 @@ if [[ ${apply_gcc14_update} -eq 1 ]]; then
     sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
 fi
 if [[ ${apply_611_update} -eq 1 ]]; then
-    sudo cp "patches/0001-Make-modeset-and-fbdev-default-enabled.patch" /tmp/.
     sudo cp "patches/0004-6.11-Add-fix-for-fbdev.patch" /tmp/.
 fi
 
@@ -339,13 +338,6 @@ dkms_module=${module_dir//-/\/}
 
 # Apply Linux 6.11 support.
 (
-    if [[ ${apply_611_update} -eq 1 && -f "/tmp/0001-Make-modeset-and-fbdev-default-enabled.patch" ]]; then
-        echo "Applying 0001-Make-modeset-and-fbdev-default-enabled.patch to /usr/src/${module_dir}"
-        cd "/usr/src/${module_dir}"
-        sudo patch -Np1 --no-backup-if-mismatch -i "/tmp/0001-Make-modeset-and-fbdev-default-enabled.patch"
-        sudo rm -f "/tmp/0001-Make-modeset-and-fbdev-default-enabled.patch"
-        echo
-    fi
     if [[ ${apply_611_update} -eq 1 && -f "/tmp/0004-6.11-Add-fix-for-fbdev.patch" ]]; then
         echo "Applying 0004-6.11-Add-fix-for-fbdev.patch to /usr/src/${module_dir}"
         cd "/usr/src/${module_dir}"

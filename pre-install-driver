@@ -114,6 +114,7 @@ options nvidia NVreg_PreserveVideoMemoryAllocations=1
 # For Wayland, this must be disabled in the case of Mosaic or SLI.
 # Set to 0 or comment to disable kernel modesetting support.
 options nvidia_drm modeset=1
+options nvidia NVreg_EnableGpuFirmware=0
 EOF
 fi
 
@@ -223,7 +224,7 @@ if [[ ! -f "/etc/kernel/cmdline.d/nvidia-drm.conf" ]]; then
     update_boot=1
     echo "Enabling nvidia_drm.modeset via boot parameters."
     sudo tee "/etc/kernel/cmdline.d/nvidia-drm.conf" >/dev/null <<'EOF'
-nvidia_drm.modeset=1 initcall_blacklist=simpledrm_platform_driver_init
+nvidia_drm.modeset=1 nvidia.NVreg_EnableGpuFirmware=0 initcall_blacklist=simpledrm_platform_driver_init
 EOF
 fi
 

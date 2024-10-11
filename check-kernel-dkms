@@ -65,6 +65,12 @@ fi
 sudo rm -f /var/lib/dkms/nvidia/kernel-*
 sudo rm -f /lib/modules/*/updates/dkms/nvidia*.ko
 
+nvver=$(ls -1t "/usr/src" | grep "nvidia-.*[0-9]$" | head -1 | cut -f2 -d-)
+if [[ -n "$nvver" && ! -d "/var/lib/dkms/nvidia/$nvver" ]]; then
+    echo "Registering the NVIDIA kernel module sources with dkms"
+    sudo dkms add "nvidia/$nvver" || exit 1
+fi
+
 for variant in $(ls -1 "/usr/lib/modules"); do
     if [[ -f "/usr/lib/modules/${variant}/modules.dep" ]]; then
         echo "Checking dkms modules in ${variant}."

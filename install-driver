@@ -197,6 +197,9 @@ sudo rm -f /usr/lib64/libnvidia-vulkan-producer.so.*
 
 # Define arguments for the NVIDIA installer script.
 args=""
+if [[ ${nvver1} -ge 560 ]]; then
+    args+=" --kernel-module-type=proprietary"
+fi
 args+=" --kernel-install-path=/lib/modules/$(uname -r)/updates/dkms"
 args+=" --force-libglx-indirect"
 args+=" --glvnd-egl-config-path=/usr/share/glvnd/egl_vendor.d"

@@ -114,6 +114,9 @@ options nvidia NVreg_PreserveVideoMemoryAllocations=1
 # For Wayland, this must be disabled in the case of Mosaic or SLI.
 # Set to 0 or comment to disable kernel modesetting support.
 options nvidia_drm modeset=1
+
+# Disable the GPU System Processor (GSP) firmware to prevent slow downs.
+# Helpful for smoother animations, but works only with proprietary driver.
 options nvidia NVreg_EnableGpuFirmware=0
 EOF
 fi

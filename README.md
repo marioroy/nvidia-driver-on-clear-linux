@@ -70,11 +70,12 @@ $ bash ./install-cuda auto    # or path to run file
 $ bash ./install-cuda ~/Downloads/cuda_12.4.1_550.54.15_linux.run
 ```
 
-Update `~/.profile` so that it can find the `nvcc` command.
+Update `~/.bashrc` so that it can find the `nvcc` command.
 
 ```bash
 export CUDA_HOME=/opt/cuda
 export PATH=$PATH:$CUDA_HOME/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
 ```
 
 **Q)** Why specify the auto argument to `install-cuda` or lower version than the display driver?

@@ -35,13 +35,14 @@ Next, run the driver installer script. Specifying [latest](https://download.nvid
 | Driver |    Version                    |
 |--------|-------------------------------|
 | latest | [latest.txt](https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt) |
-| 550    | 550.120 NVIDIA Recommended    |
-| 560    | 560.35.03 New Feature Branch  |
-| vulkan | 550.40.76 Beta                |
+| 550    | 550.135 NVIDIA Recommended    |
+| 560    | 560.35.05 Latest CUDA Driver  |
+| 565    | 565.57.01 Latest Beta Driver  |
+| vulkan | 550.40.80 Vulkan Beta Driver  |
 
 ```bash
 $ bash ./install-driver help
-Usage: install-driver latest|550|560|vulkan|<pathname>
+Usage: install-driver latest|550|560|565|vulkan|<pathname>
 
 $ bash ./install-driver 550
 $ sudo reboot
@@ -53,18 +54,14 @@ Installing the CUDA Toolkit is optional. The "auto" argument is preferred and wi
 
 | Driver | CUDA Toolkit |
 |--------|--------------|
-|  560   |    12.6.2    |
-|  555   |    12.5.1    |
+|  560   |    12.6.3    |
 |  550   |    12.4.1    |
-|  545   |    12.3.2    |
 |  535   |    12.2.2    |
-|  530   |    12.1.1    |
-|  525   |    12.0.1    |
 |  520   |    11.8.0    |
 
 ```bash
 $ bash ./install-cuda help
-Usage: install-cuda auto|latest|12.6|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<pathname>
+Usage: install-cuda auto|latest|12.6|12.4|12.2|11.8|<pathname>
 
 $ bash ./install-cuda auto    # or path to run file
 $ bash ./install-cuda ~/Downloads/cuda_12.4.1_550.54.15_linux.run
@@ -74,8 +71,18 @@ Update `~/.bashrc` so that it can find the `nvcc` command.
 
 ```bash
 export CUDA_HOME=/opt/cuda
-export PATH=$PATH:$CUDA_HOME/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+```
+
+Or if you prefer, use `module` to prepend the CUDA path.
+First time? This may require logging out and back in,
+or open a new terminal window.
+
+```bash
+$ module load cuda
+$ nvcc --version
+$ module unload cuda
 ```
 
 **Q)** Why specify the auto argument to `install-cuda` or lower version than the display driver?
@@ -107,7 +114,7 @@ Run `install-driver latest` or acquire the run-file from NVIDIA and save it loca
 $ bash ./pre-install-driver
 
 $ bash ./install-driver latest    # or path to run file
-$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.120.run
+$ bash ./install-driver ~/Downloads/NVIDIA-Linux-x86_64-550.135.run
 $ sudo reboot
 ```
 

@@ -54,16 +54,53 @@ if [[ -n "$add_list" ]]; then
     echo
 fi
 
-###############################################################################
-
 if [[ ! -x "/usr/bin/dkms" ]]; then
     echo "The dkms package is not installed, exiting."
     exit 1
 fi
 
+###############################################################################
+
+# Linux 6.12 has *.c files, missing in Clear's initial 6.12 linux-dev bundle.
+
+function addfile_module_common_c_if_missing {
+    local variant="$1"
+    if [[ ! -f "/usr/lib/modules/${variant}/build/scripts/module-common.c" ]]; then
+        sudo mkdir -p "/usr/lib/modules/${variant}/build/scripts"
+        sudo tee "/usr/lib/modules/${variant}/build/scripts/module-common.c" >/dev/null <<'EOF'
+// SPDX-License-Identifier: GPL-2.0
+
+#include <linux/module.h>
+/*
+ * Include build-salt.h after module.h in order to
+ * inherit the definitions.
+ */
+#define INCLUDE_VERMAGIC
+#include <linux/build-salt.h>
+#include <linux/elfnote-lto.h>
+#include <linux/vermagic.h>
+
+#ifdef CONFIG_UNWINDER_ORC
+#include <asm/orc_header.h>
+ORC_HEADER;
+#endif
+
+BUILD_SALT;
+BUILD_LTO_INFO;
+
+MODULE_INFO(vermagic, VERMAGIC_STRING);
+
+#ifdef CONFIG_MITIGATION_RETPOLINE
+MODULE_INFO(retpoline, "Y");
+#endif
+EOF
+    fi
+}
+
 # Double-check all kernels on the system.
+# Remove existing modules and refresh from /var/lib/dkms/nvidia/<version>/
 sudo rm -f /var/lib/dkms/nvidia/kernel-*
-sudo rm -f /lib/modules/*/updates/dkms/nvidia*.ko
+sudo rm -f /lib/modules/*/updates/dkms/nvidia*.ko*
 
 nvver=$(ls -1t "/usr/src" | grep "nvidia-.*[0-9]$" | head -1 | cut -f2 -d-)
 if [[ -n "$nvver" && ! -d "/var/lib/dkms/nvidia/$nvver" ]]; then
@@ -74,6 +111,9 @@ fi
 for variant in $(ls -1 "/usr/lib/modules"); do
     if [[ -f "/usr/lib/modules/${variant}/modules.dep" ]]; then
         echo "Checking dkms modules in ${variant}."
+        if [[ "$variant" = "6.12."* ]]; then
+            addfile_module_common_c_if_missing "${variant}"
+        fi
         sudo CFLAGS="" CXXFLAGS="" IGNORE_PREEMPT_RT_PRESENCE=1 \
             dkms autoinstall -k "${variant}" --force >/dev/null 2>&1
         sudo depmod -A "${variant}"

@@ -14,6 +14,7 @@ if [[ -d "/opt/cuda" ]]; then
     echo "Uninstalling the NVIDIA CUDA Toolkit."
     sudo rm -fr /usr/local/cuda /opt/cuda /etc/ld.so.conf.d/cuda-*.conf
     sudo rm -f /etc/environment.d/10-nvidia-cuda.conf
+    sudo rm -f /usr/share/modules/modulefiles/cuda
 
     echo "Refreshing the dynamic linker run-time cache."
     sudo ldconfig

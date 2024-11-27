@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # CUDA installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-cuda auto|latest|12.6|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<pathname>
+# Usage: ./install-cuda auto|latest|12.6|12.4|12.2|11.8|<pathname>
 #
 # CUDA Toolkit Archive
 #   https://developer.nvidia.com/cuda-toolkit-archive
@@ -60,7 +60,7 @@ case "$1" in
           inst_url="https://developer.download.nvidia.com/compute/cuda/${in}"
           ;;
 
-12.6|560) inst_url="https://developer.download.nvidia.com/compute/cuda/12.6.2/local_installers/cuda_12.6.2_560.35.03_linux.run"
+12.6|560) inst_url="https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda_12.6.3_560.35.05_linux.run"
           ;;
 
 12.5|555) inst_url="https://developer.download.nvidia.com/compute/cuda/12.5.1/local_installers/cuda_12.5.1_555.42.06_linux.run"
@@ -91,7 +91,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} auto|latest|12.6|12.5|12.4|12.3|12.2|12.1|12.0|11.8|<pathname>"
+              echo "Usage: ${0##*/} auto|latest|12.6|12.4|12.2|11.8|<pathname>"
               exit 1
           fi
 esac
@@ -141,7 +141,7 @@ installed_bundles=$(sudo swupd bundle-list | grep '^ - ' | sed 's/$/ /g')
 add_list=""
 
 for bundle_name in \
-    c-basic c-extras-gcc11 devpkg-glu devpkg-libX11 devpkg-libXi devpkg-libXmu \
+    c-basic c-extras-gcc11 devpkg-glu devpkg-libX11 devpkg-libXi devpkg-libXmu modules \
 ;do
     if [[ ! ${installed_bundles} == *" - ${bundle_name} "* ]]; then
         add_list+=" ${bundle_name}"
@@ -186,12 +186,37 @@ fi
 # Refresh the dynamic linker run-time cache.
 sudo ldconfig
 
-# Set default compiler and CUDA_HOME.
+# Set default compilers and CUDA_HOME.
 sudo ln -sf /usr/bin/gcc-11 /opt/cuda/bin/gcc
+sudo ln -sf /usr/bin/g++-11 /opt/cuda/bin/g++
 
+# Add minimally, the CUDA_HOME environment variable.
 sudo mkdir -p "/etc/environment.d"
 sudo tee "/etc/environment.d/10-nvidia-cuda.conf" >/dev/null <<'EOF'
 CUDA_HOME=/opt/cuda
+EOF
+
+# Add the cuda module file.
+sudo mkdir -p "/usr/share/modules/modulefiles"
+sudo tee "/usr/share/modules/modulefiles/cuda" >/dev/null <<'EOF'
+#%Module 1.0
+
+proc ModuleHelp { } {
+    puts stderr "\tAdds NVIDIA CUDA Toolkit to your environment variables."
+}
+
+module-whatis "adds NVIDIA CUDA Toolkit to your environment variables"
+
+set           CUDA             /opt/cuda
+setenv        CUDA_HOME        $CUDA
+
+# The prepend-path action will skip if the path already exists.
+# In the event the path comes after /usr/bin, let's remove the path.
+remove-path   PATH             $CUDA/bin
+
+# Insert the CUDA path.
+prepend-path  PATH             $CUDA/bin
+prepend-path  LD_LIBRARY_PATH  $CUDA/lib64
 EOF
 
 sync

@@ -6,7 +6,7 @@
 [[ $(source "/etc/os-release" 2>/dev/null; echo "$ID") == "clear-linux-os" ]] || exit 1
 
 # Driver installer script for NVIDIA graphics on Clear Linux OS.
-# Usage: ./install-driver latest|550|560|vulkan|<pathname>
+# Usage: ./install-driver latest|550|560|565|vulkan|<pathname>
 #
 # NVIDIA Driver Archive
 #   https://download.nvidia.com/XFree86/Linux-x86_64/
@@ -67,11 +67,13 @@ case "$1" in
           in=$(curl -sL "https://download.nvidia.com/XFree86/Linux-x86_64/latest.txt" | head -1);
           inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/${in##* }"
           ;;
-     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.120/NVIDIA-Linux-x86_64-550.120.run"
+     550) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/550.135/NVIDIA-Linux-x86_64-550.135.run"
           ;;
-     560) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/560.35.03/NVIDIA-Linux-x86_64-560.35.03.run"
+     560) inst_url="https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/nvidia_driver-linux-x86_64-560.35.05-archive.tar.xz"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504076-linux"
+     565) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/565.57.01/NVIDIA-Linux-x86_64-565.57.01.run"
+          ;;
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504080-linux"
           ;;
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
@@ -99,7 +101,7 @@ case "$1" in
               fi
               inst_file="$1"
           else
-              echo "Usage: ${0##*/} latest|550|560|vulkan|<pathname>"
+              echo "Usage: ${0##*/} latest|550|560|565|vulkan|<pathname>"
               exit 1
           fi
 esac
@@ -138,29 +140,38 @@ fi
 
 nvver1=$(echo "$inst_file" | cut -f4 -d- | cut -f1 -d.)
 nvver2=$(echo "$inst_file" | cut -f4 -d- | cut -f2 -d.)
-
-apply_gpl_pfn_valid_patch=0
-apply_gcc14_update=0
-apply_611_update=0
+patchlist=()
 
 if [[ "$inst_file" =~ $path_vulkan ]]; then
-    true  # pass - The path vulkan regex is checked first.
-elif [[ ${nvver1} -le 545 ]]; then
-    echo "ERROR: The ${nvver1} release is unsupported. Try 550 or later release."
+    # the Vulkan driver is checked first
+    patchlist+=("0005-6.12-drm_output_poll_changed.patch")
+    patchlist+=("0006-6.12-Set-FOP_UNSIGNED_OFFSET.patch")
+elif [[ ${nvver1} -le 545 || ${nvver1} -eq 555 ]]; then
+    echo "ERROR: The ${nvver1} release is unsupported. Try 550, 560 or later release."
     exit 1
-elif [[ ${nvver1} -eq 550 && ${nvver2} -le 40 ]]; then
-    apply_gpl_pfn_valid_patch=1
-    apply_gcc14_update=1
-elif [[ ${nvver1} -eq 550 && ${nvver2} -le 54 ]]; then
-    apply_gcc14_update=1
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 90 ]]; then
+    echo "ERROR: The ${nvver1}.${nvver2} release is unsupported. Try later release."
+    exit 1
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 107 ]]; then
+    patchlist+=("0005-6.12-drm_output_poll_changed.patch")
+    patchlist+=("0006-6.12-Set-FOP_UNSIGNED_OFFSET.patch")
+elif [[ ${nvver1} -eq 550 && ${nvver2} -le 127 ]]; then
+    patchlist+=("0006-6.12-Set-FOP_UNSIGNED_OFFSET.patch")
 elif [[ ${nvver1} -eq 560 && ${nvver2} -le 35 ]]; then
-    apply_611_update=1
+    patchlist+=("0004-6.11-Add-fix-for-fbdev.patch")
+    patchlist+=("0005-6.12-drm_output_poll_changed.patch")
+    patchlist+=("0006-6.12-Set-FOP_UNSIGNED_OFFSET.patch")
+elif [[ ${nvver1} -eq 565 && ${nvver2} -le 57 ]]; then
+    patchlist+=("0006-6.12-Set-FOP_UNSIGNED_OFFSET.patch")
 fi
 
 ###############################################################################
 
 # Test sudo and exit if wrong password or terminated via Ctrl-C.
 sudo id >/dev/null || exit 2
+
+# Attempt to unload the nvidia module, helpful for trimmed kernels.
+sudo rmmod nvidia 2>/dev/null
 
 # Create directories.
 sudo mkdir -p "/etc/X11"
@@ -213,36 +224,64 @@ args+=" --no-precompiled-interface"
 args+=" --no-distro-scripts"
 args+=" --no-cc-version-check"
 args+=" --no-nouveau-check"
+args+=" --no-rpms"
+args+=" --skip-module-load"
 args+=" --silent"
 args+=" --no-dkms"
 
 sudo cp "check-kernel-dkms" /tmp/.
-
-if [[ ${apply_gpl_pfn_valid_patch} -eq 1 ]]; then
-    sudo cp "patches/nvidia-gpl-pfn_valid.patch" /tmp/.
-fi
-if [[ ${apply_gcc14_update} -eq 1 ]]; then
-    sudo cp "patches/nvidia-drivers-gcc14.patch" /tmp/.
-fi
-if [[ ${apply_611_update} -eq 1 ]]; then
-    sudo cp "patches/0004-6.11-Add-fix-for-fbdev.patch" /tmp/.
-fi
+for p in "${patchlist[@]}"; do
+    sudo cp "patches/${p}" /tmp/.
+done
 
 # Remove all /usr/src/nvidia-* folders and /var/lib/dkms/nvidia/VERSION.
 # This is necessary in case of prior gpl_pfn_valid patching.
 sudo rm -fr /usr/src/nvidia-[0-9]*[0-9]
 sudo rm -fr /var/lib/dkms/nvidia/[0-9]*[0-9]
 
-# Install driver.
+# Remove existing modules to not have *.ko and *.ko.zst, causing mismatch.
+sudo rm -f /lib/modules/*/updates/dkms/nvidia*.ko*
+
+function _patch {
+    local p="$1"
+    if [[ -f "/tmp/${p}" ]]; then
+        echo "Applying ${p}"
+        patch -Np1 --no-backup-if-mismatch -i "/tmp/${p}"
+        sudo rm -f "/tmp/${p}"
+        echo
+    fi
+}
+
+# Install the driver.
 if [[ "$inst_file" =~ $path_regex1 || "$inst_file" =~ $path_vulkan ]]; then
     # Installation via a driver run file
-    echo "Installing the NVIDIA proprietary driver..."
+    mkdir -p "/tmp/nvidia-install.$$"
+    cp "$inst_file" "/tmp/nvidia-install.$$"/. || exit 1
 
+    cd "/tmp/nvidia-install.$$" || exit 1
+    bash "${inst_file##*/}" --extract-only
+    rm -f "${inst_file##*/}"
+
+    # shellcheck disable=SC2164
+    cd /tmp/nvidia-install.$$/*
+
+    # Ignore RT presence for linux-rt users
+    sed -i 's/NV_EXCLUDE_BUILD_MODULES/IGNORE_PREEMPT_RT_PRESENCE=1 NV_EXCLUDE_BUILD_MODULES/' kernel/dkms.conf
+
+    # Patch kernel modules
+    for p in "${patchlist[@]}"; do
+        _patch "${p}"
+    done
+
+    echo "Installing the NVIDIA proprietary driver..."
     # shellcheck disable=SC2086
     sudo CFLAGS="" CXXFLAGS="" IGNORE_PREEMPT_RT_PRESENCE=1 \
-        bash -c "export PATH=/tmp:\$PATH; bash '$inst_file' $args 2>/dev/null"
-
+        bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
     status=$?
+
+    # Clean up
+    cd "/tmp" || exit 1
+    sudo rm -rf "/tmp/nvidia-install.$$"
 else
     # Installation via a CUDA redistributable driver file
     inst_ver=$(echo "$inst_file" | cut -f4 -d-)
@@ -250,7 +289,6 @@ else
     mkdir -p "/tmp/nvidia-redist.$$"
     tar xJf "$inst_file" -C "/tmp/nvidia-redist.$$"
 
-    echo "Installing the NVIDIA proprietary driver..."
     # shellcheck disable=SC2164
     cd /tmp/nvidia-redist.$$/*
 
@@ -292,15 +330,22 @@ else
         printf "NVIDIA-Linux-x86_64-${ver}: Added Wine files\n\n"
     ) > pkg-history.txt; unset ver
 
-    # Run the installer
+    # Ignore RT presence for linux-rt users
+    sed -i 's/NV_EXCLUDE_BUILD_MODULES/IGNORE_PREEMPT_RT_PRESENCE=1 NV_EXCLUDE_BUILD_MODULES/' kernel/dkms.conf
+
+    # Patch kernel modules
+    for p in "${patchlist[@]}"; do
+        _patch "${p}"
+    done
+
+    echo "Installing the NVIDIA proprietary driver..."
     # shellcheck disable=SC2086
     sudo CFLAGS="" CXXFLAGS="" IGNORE_PREEMPT_RT_PRESENCE=1 \
         bash -c "export PATH=/tmp:\$PATH; ./nvidia-installer $args 2>/dev/null"
-
     status=$?
 
     # Clean up
-    cd "/tmp" || exit
+    cd "/tmp" || exit 1
     sudo rm -rf "/tmp/nvidia-redist.$$"
 fi
 
@@ -310,45 +355,13 @@ if [[ $status -ne 0 ]]; then
     echo "See /var/log/nvidia-installer.log for details."
     exit $status
 else
-    echo "The NVIDIA driver installation succeeded."
+    echo "The installation succeeded."
     echo
 fi
 
 module_dir=$(cd /usr/src; ls -1dr nvidia-*[0-9] | head -1)
 dkms_module=${module_dir//-/\/}
-
-# Fix GPL-incompatible module nvidia.ko uses GPL-only symbol __rcu_read_[un]lock.
-(
-    if [[ ${apply_gpl_pfn_valid_patch} -eq 1 && -f "/tmp/nvidia-gpl-pfn_valid.patch" ]]; then
-        echo "Applying nvidia-gpl-pfn_valid.patch to /usr/src/${module_dir}"
-        cd "/usr/src/${module_dir}"
-        sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-gpl-pfn_valid.patch"
-        sudo rm -f "/tmp/nvidia-gpl-pfn_valid.patch"
-        echo
-    fi
-)
-
-# Apply GCC14 support to conftest.sh.
-(
-    if [[ ${apply_gcc14_update} -eq 1 && -f "/tmp/nvidia-drivers-gcc14.patch" ]]; then
-        echo "Applying nvidia-drivers-gcc14.patch to /usr/src/${module_dir}"
-        cd "/usr/src/${module_dir}"
-        sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/nvidia-drivers-gcc14.patch"
-        sudo rm -f "/tmp/nvidia-drivers-gcc14.patch"
-        echo
-    fi
-)
-
-# Apply Linux 6.11 support.
-(
-    if [[ ${apply_611_update} -eq 1 && -f "/tmp/0004-6.11-Add-fix-for-fbdev.patch" ]]; then
-        echo "Applying 0004-6.11-Add-fix-for-fbdev.patch to /usr/src/${module_dir}"
-        cd "/usr/src/${module_dir}"
-        sudo patch -Np2 --no-backup-if-mismatch -i "/tmp/0004-6.11-Add-fix-for-fbdev.patch"
-        sudo rm -f "/tmp/0004-6.11-Add-fix-for-fbdev.patch"
-        echo
-    fi
-)
+cd "/tmp" || exit 1
 
 # Register DKMS module.
 echo "Registering the NVIDIA kernel module sources with DKMS."
@@ -358,6 +371,7 @@ sudo dkms add ${dkms_module}
 echo "Building the NVIDIA kernel modules."
 sudo "/tmp/check-kernel-dkms" || exit $?
 sudo rm -f "/tmp/check-kernel-dkms"
+echo
 
 # Configure NVD_BACKEND, system-wide.
 sudo mkdir -p "/etc/environment.d"

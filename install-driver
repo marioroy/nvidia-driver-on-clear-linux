@@ -71,9 +71,9 @@ case "$1" in
           ;;
      560) inst_url="https://developer.download.nvidia.com/compute/cuda/redist/nvidia_driver/linux-x86_64/nvidia_driver-linux-x86_64-560.35.05-archive.tar.xz"
           ;;
-     565) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/565.57.01/NVIDIA-Linux-x86_64-565.57.01.run"
+     565) inst_url="https://download.nvidia.com/XFree86/Linux-x86_64/565.77/NVIDIA-Linux-x86_64-565.77.run"
           ;;
-  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504080-linux"
+  vulkan) inst_url="https://developer.nvidia.com/downloads/vulkan-beta-5504081-linux"
           ;;
        *) if [[ "$1" =~ $path_regex1 ]]; then
               # Installation via a driver run file
